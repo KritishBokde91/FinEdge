@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -56,7 +57,7 @@ class SmsSyncService {
       final force = forceResync || currentTxList.isEmpty;
       if (forceResync) {
         developer.log('Force resync requested: clearing existing database transactions', name: 'SmsSyncService');
-        print('[SmsSyncService] Force resync requested: clearing existing database transactions');
+        debugPrint('[SmsSyncService] Force resync requested: clearing existing database transactions');
         for (final tx in currentTxList) {
           await txRepo.deleteTransaction(tx.id);
         }
@@ -66,7 +67,7 @@ class SmsSyncService {
         'Starting SMS sync. Last sync: $lastSync, Limit: $limit, Force: $force',
         name: 'SmsSyncService',
       );
-      print('[SmsSyncService] Starting SMS sync. Last sync: $lastSync, Limit: $limit, Force: $force');
+      debugPrint('[SmsSyncService] Starting SMS sync. Last sync: $lastSync, Limit: $limit, Force: $force');
 
       // Read SMS from native inbox
       final List<dynamic>? rawMessages = await _channel.invokeMethod(
@@ -79,7 +80,7 @@ class SmsSyncService {
           'No SMS messages returned from inbox',
           name: 'SmsSyncService',
         );
-        print('[SmsSyncService] No SMS messages returned from inbox');
+        debugPrint('[SmsSyncService] No SMS messages returned from inbox');
         return 0;
       }
 
@@ -87,7 +88,7 @@ class SmsSyncService {
         'Received ${rawMessages.length} raw SMS from inbox',
         name: 'SmsSyncService',
       );
-      print('[SmsSyncService] Received ${rawMessages.length} raw SMS from inbox');
+      debugPrint('[SmsSyncService] Received ${rawMessages.length} raw SMS from inbox');
 
       int importedCount = 0;
       int filteredBySender = 0;
@@ -215,7 +216,7 @@ class SmsSyncService {
         '$filteredByParsing filtered by parsing',
         name: 'SmsSyncService',
       );
-      print('[SmsSyncService] SMS sync complete: $importedCount imported, '
+      debugPrint('[SmsSyncService] SMS sync complete: $importedCount imported, '
           '$parsedNatively parsed by PennyWise native bridge, '
           '$parsedWithFallback parsed by Dart fallback, '
           '$filteredBySender filtered by sender, '

@@ -12,21 +12,12 @@ import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/transactions/presentation/pages/transactions_page.dart';
 import '../../features/transactions/presentation/pages/transaction_details_page.dart';
 import '../../features/sms_intelligence/presentation/pages/sms_intelligence_page.dart';
+import '../../features/analytics/presentation/pages/analytics_page.dart';
+import '../../features/profile/presentation/pages/profile_page.dart';
 
-// --- Stub views for non-core features ---
-class _AnalyticsView extends StatelessWidget {
-  const _AnalyticsView();
-  @override
-  Widget build(BuildContext context) =>
-      const Scaffold(body: Center(child: Text('Financial Analytics Screen')));
-}
-
-class _ProfileView extends StatelessWidget {
-  const _ProfileView();
-  @override
-  Widget build(BuildContext context) =>
-      const Scaffold(body: Center(child: Text('Profile & Settings Screen')));
-}
+// Sub-routes (pushed on top of tabs, not part of bottom-nav shell)
+import '../../features/budget_planner/presentation/pages/budget_planner_page.dart';
+import '../../features/financial_goals/presentation/pages/goals_page.dart';
 
 class _ErrorView extends StatelessWidget {
   final Exception? error;
@@ -38,7 +29,7 @@ class _ErrorView extends StatelessWidget {
 }
 
 /// Central routing controller configurations for the FinSight application.
-/// Maps paths to screens, supports index preservation tabs, and defines stub redirects.
+/// Maps paths to screens, supports index preservation tabs, and defines sub-routes.
 abstract class AppRouter {
   static final GlobalKey<NavigatorState> rootNavigatorKey =
       GlobalKey<NavigatorState>();
@@ -63,7 +54,7 @@ abstract class AppRouter {
     },
 
     routes: [
-      // --- Standalone Routes ---
+      // --- Standalone Routes (outside shell) ---
       GoRoute(
         path: RouteNames.splashPath,
         name: RouteNames.splash,
@@ -83,6 +74,18 @@ abstract class AppRouter {
         path: RouteNames.authPath,
         name: RouteNames.auth,
         builder: (context, state) => const AuthPage(),
+      ),
+
+      // --- Full-screen sub-routes (pushed over the bottom-nav shell) ---
+      GoRoute(
+        path: RouteNames.budgetPath,
+        name: RouteNames.budget,
+        builder: (context, state) => const BudgetPlannerPage(),
+      ),
+      GoRoute(
+        path: RouteNames.goalsPath,
+        name: RouteNames.goals,
+        builder: (context, state) => const GoalsPage(),
       ),
 
       // --- Stateful Bottom Navigation Tab Shell ---
@@ -123,14 +126,14 @@ abstract class AppRouter {
               ),
             ],
           ),
-          // Tab 2: Analytics Reports
+          // Tab 2: Analytics Reports — now fully implemented
           StatefulShellBranch(
             navigatorKey: _analyticsNavigatorKey,
             routes: [
               GoRoute(
                 path: RouteNames.analyticsPath,
                 name: RouteNames.analytics,
-                builder: (context, state) => const _AnalyticsView(),
+                builder: (context, state) => const AnalyticsPage(),
               ),
             ],
           ),
@@ -145,14 +148,14 @@ abstract class AppRouter {
               ),
             ],
           ),
-          // Tab 4: Profile & Configurations
+          // Tab 4: Profile & Configurations — now fully implemented
           StatefulShellBranch(
             navigatorKey: _profileNavigatorKey,
             routes: [
               GoRoute(
                 path: RouteNames.profilePath,
                 name: RouteNames.profile,
-                builder: (context, state) => const _ProfileView(),
+                builder: (context, state) => const ProfilePage(),
               ),
             ],
           ),

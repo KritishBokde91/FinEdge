@@ -198,16 +198,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         _buildQuickAction(
                           icon: Icons.account_balance_wallet_rounded,
                           label: 'Budgets',
-                          onTap: () {
-                            // Sub-routes can be called if implemented
-                          },
+                          onTap: () => context.goNamed(RouteNames.budget),
                         ),
                         _buildQuickAction(
                           icon: Icons.stars_rounded,
                           label: 'Goals',
-                          onTap: () {
-                            // Sub-routes can be called if implemented
-                          },
+                          onTap: () => context.goNamed(RouteNames.goals),
                         ),
                       ],
                     ),
@@ -372,7 +368,7 @@ class _LineChartPainter extends CustomPainter {
 
     // Sort transactions chronologically
     final sortedTx = List<TransactionEntity>.from(transactions)
-      ..sort((TransactionEntity a, TransactionEntity b) => a.timestamp.compareTo(b.timestamp));
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
     // Calculate running balance points
     double runningBalance = 0;

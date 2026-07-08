@@ -31,4 +31,11 @@ abstract class RouteNames {
 
   static const String profile = 'profile';
   static const String profilePath = '/profile';
+
+  // --- Full-screen sub-routes ---
+  static const String budget = 'budget';
+  static const String budgetPath = '/budget';
+
+  static const String goals = 'goals';
+  static const String goalsPath = '/goals';
 }

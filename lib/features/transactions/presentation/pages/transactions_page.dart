@@ -7,6 +7,7 @@ import '../../../../core/routing/route_names.dart';
 import '../../../../shared/widgets/inputs/app_search_field.dart';
 import '../../../../shared/widgets/inputs/app_filter_chip.dart';
 import '../../../../shared/widgets/transactions/transaction_tile.dart';
+import '../../../../shared/widgets/dialogs/add_transaction_dialog.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -23,13 +24,20 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
   String _searchQuery = '';
   String _selectedCategory = 'All';
 
+  // Categories matching SmsParser._classifyCategory output exactly
   final List<String> _categories = [
     'All',
-    'Salary',
-    'Groceries',
-    'Utilities',
+    'Food',
+    'Shopping',
     'Transport',
+    'Entertainment',
+    'Bills',
+    'Investment',
+    'Salary',
+    'Recharge',
     'Transfer',
+    'Cash',
+    'Other',
   ];
 
   @override
@@ -44,6 +52,12 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
     final txRepository = ref.watch(transactionRepositoryProvider);
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => AddTransactionDialog.show(context),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add'),
+        tooltip: 'Add manual transaction',
+      ),
       body: SafeArea(
         child: Column(
           children: [
