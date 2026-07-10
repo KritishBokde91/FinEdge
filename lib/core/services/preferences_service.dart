@@ -57,4 +57,49 @@ class PreferencesService {
   Future<bool> setLastSmsSyncTimestamp(int timestamp) {
     return _prefs.setInt(_keyLastSmsSync, timestamp);
   }
+
+  // --- Contacts VPA Mapping Toggle ---
+  static const String _keyUseContactsForVpa = 'use_contacts_for_vpa';
+
+  bool useContactsForVpa() {
+    return _prefs.getBool(_keyUseContactsForVpa) ?? false;
+  }
+
+  Future<bool> setUseContactsForVpa(bool enabled) {
+    return _prefs.setBool(_keyUseContactsForVpa, enabled);
+  }
+
+  // --- Theme Styles Preference Mappings ---
+  static const String _keyAccentColor = 'accent_color';
+  static const String _keyAppFont = 'app_font';
+  static const String _keyCoverStyle = 'cover_style';
+  static const String _keyNavBarStyle = 'navbar_style';
+  static const String _keyNumberFormatStyle = 'number_format_style';
+  static const String _keyThemeStyle = 'theme_style';
+  static const String _keyUnifiedCurrencyMode = 'unified_currency_mode';
+  static const String _keyDisplayCurrency = 'display_currency';
+
+  String getAccentColor() => _prefs.getString(_keyAccentColor) ?? 'blue';
+  Future<bool> setAccentColor(String color) => _prefs.setString(_keyAccentColor, color);
+
+  String getAppFont() => _prefs.getString(_keyAppFont) ?? 'system';
+  Future<bool> setAppFont(String font) => _prefs.setString(_keyAppFont, font);
+
+  String getCoverStyle() => _prefs.getString(_keyCoverStyle) ?? 'default';
+  Future<bool> setCoverStyle(String style) => _prefs.setString(_keyCoverStyle, style);
+
+  String getNavBarStyle() => _prefs.getString(_keyNavBarStyle) ?? 'standard';
+  Future<bool> setNavBarStyle(String style) => _prefs.setString(_keyNavBarStyle, style);
+
+  String getNumberFormatStyle() => _prefs.getString(_keyNumberFormatStyle) ?? 'en_IN';
+  Future<bool> setNumberFormatStyle(String style) => _prefs.setString(_keyNumberFormatStyle, style);
+
+  String getThemeStyle() => _prefs.getString(_keyThemeStyle) ?? 'dynamic';
+  Future<bool> setThemeStyle(String style) => _prefs.setString(_keyThemeStyle, style);
+
+  bool isUnifiedCurrencyMode() => _prefs.getBool(_keyUnifiedCurrencyMode) ?? false;
+  Future<bool> setUnifiedCurrencyMode(bool value) => _prefs.setBool(_keyUnifiedCurrencyMode, value);
+
+  String getDisplayCurrency() => _prefs.getString(_keyDisplayCurrency) ?? 'INR';
+  Future<bool> setDisplayCurrency(String currency) => _prefs.setString(_keyDisplayCurrency, currency);
 }

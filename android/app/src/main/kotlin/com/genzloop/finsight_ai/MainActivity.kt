@@ -9,17 +9,19 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.pennywiseai.parser.core.TransactionType
 import com.pennywiseai.parser.core.bank.BankParserFactory
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity: FlutterActivity() {
+class MainActivity: FlutterFragmentActivity() {
     private val CHANNEL = "com.genzloop.finsight_ai/sms"
     private val PERMISSION_REQUEST_CODE = 101
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 102
+    private val CONTACTS_PERMISSION_REQUEST_CODE = 103
     private var pendingSmsPermissionResult: MethodChannel.Result? = null
     private var pendingNotificationPermissionResult: MethodChannel.Result? = null
+    private var pendingContactsPermissionResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -36,6 +38,16 @@ class MainActivity: FlutterActivity() {
                 }
                 "requestNotificationPermission" -> {
                     requestNotificationPermission(result)
+                }
+                "checkContactsPermission" -> {
+                    result.success(hasContactsPermissions())
+                }
+                "requestContactsPermission" -> {
+                    requestContactsPermissions(result)
+                }
+                "resolveContact" -> {
+                    val phone = call.argument<String>("phone").orEmpty()
+                    result.success(queryContactName(phone))
                 }
                 "readSms" -> {
                     val limit = numberArgument(call, "limit")?.toInt() ?: 1000
@@ -70,6 +82,10 @@ class MainActivity: FlutterActivity() {
             NOTIFICATION_PERMISSION_REQUEST_CODE -> {
                 pendingNotificationPermissionResult?.success(hasNotificationPermission())
                 pendingNotificationPermissionResult = null
+            }
+            CONTACTS_PERMISSION_REQUEST_CODE -> {
+                pendingContactsPermissionResult?.success(hasContactsPermissions())
+                pendingContactsPermissionResult = null
             }
         }
     }
@@ -264,6 +280,53 @@ class MainActivity: FlutterActivity() {
             is Number -> value.toLong()
             is String -> value.toLongOrNull()
             else -> null
+        }
+    }
+
+    private fun hasContactsPermissions(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.READ_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestContactsPermissions(result: MethodChannel.Result) {
+        if (hasContactsPermissions()) {
+            result.success(true)
+            return
+        }
+
+        pendingContactsPermissionResult?.error(
+            "permission_request_replaced",
+            "A newer contacts permission request replaced this one.",
+            null
+        )
+        pendingContactsPermissionResult = result
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.READ_CONTACTS),
+            CONTACTS_PERMISSION_REQUEST_CODE
+        )
+    }
+
+    private fun queryContactName(phoneLast10: String): String? {
+        if (phoneLast10.length != 10 || !phoneLast10.all { it.isDigit() }) return null
+        if (!hasContactsPermissions()) return null
+
+        val uri = Uri.withAppendedPath(
+            android.provider.ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+            Uri.encode(phoneLast10)
+        )
+        val projection = arrayOf(android.provider.ContactsContract.PhoneLookup.DISPLAY_NAME)
+        return try {
+            contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val idx = cursor.getColumnIndex(android.provider.ContactsContract.PhoneLookup.DISPLAY_NAME)
+                    if (idx >= 0) cursor.getString(idx) else null
+                } else null
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 }

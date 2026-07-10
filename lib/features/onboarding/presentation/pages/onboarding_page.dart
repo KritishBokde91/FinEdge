@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../main.dart';
 import '../../../../core/routing/route_names.dart';
 import '../../../../shared/widgets/buttons/app_button.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
@@ -122,7 +121,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           item['description']!,
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppColors.onSurfaceVariantDark,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],

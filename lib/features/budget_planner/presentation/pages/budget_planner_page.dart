@@ -19,8 +19,14 @@ class BudgetPlannerPage extends ConsumerStatefulWidget {
 
 class _BudgetPlannerPageState extends ConsumerState<BudgetPlannerPage> {
   static const List<String> _availableCategories = [
-    'Food', 'Shopping', 'Transport', 'Entertainment',
-    'Bills', 'Investment', 'Recharge', 'Other',
+    'Food',
+    'Shopping',
+    'Transport',
+    'Entertainment',
+    'Bills',
+    'Investment',
+    'Recharge',
+    'Other',
   ];
 
   @override
@@ -29,7 +35,8 @@ class _BudgetPlannerPageState extends ConsumerState<BudgetPlannerPage> {
     final budgetUseCase = ref.watch(manageBudgetUseCaseProvider);
     final txRepo = ref.watch(transactionRepositoryProvider);
     final currencyFmt = NumberFormat.simpleCurrency(
-      name: 'INR', decimalDigits: 0,
+      name: 'INR',
+      decimalDigits: 0,
     );
 
     return Scaffold(
@@ -63,9 +70,11 @@ class _BudgetPlannerPageState extends ConsumerState<BudgetPlannerPage> {
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 Text(
-                                  DateFormat('MMMM yyyy').format(DateTime.now()),
+                                  DateFormat(
+                                    'MMMM yyyy',
+                                  ).format(DateTime.now()),
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.onSurfaceVariantDark,
+                                    color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -105,39 +114,36 @@ class _BudgetPlannerPageState extends ConsumerState<BudgetPlannerPage> {
                       )
                     else
                       SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final budget = budgets[index];
-                            final spent = ManageBudgetUseCase.calculateSpending(
-                              category: budget.category,
-                              startDate: budget.startDate,
-                              endDate: budget.endDate,
-                              allTransactions: transactions,
-                            );
-                            final ratio = ManageBudgetUseCase.utilisationRatio(
-                              spent: spent,
-                              limit: budget.limitAmount,
-                            );
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final budget = budgets[index];
+                          final spent = ManageBudgetUseCase.calculateSpending(
+                            category: budget.category,
+                            startDate: budget.startDate,
+                            endDate: budget.endDate,
+                            allTransactions: transactions,
+                          );
+                          final ratio = ManageBudgetUseCase.utilisationRatio(
+                            spent: spent,
+                            limit: budget.limitAmount,
+                          );
 
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.lg,
-                                vertical: AppSpacing.sm,
-                              ),
-                              child: _BudgetCard(
-                                budget: budget,
-                                spent: spent,
-                                ratio: ratio,
-                                currencyFmt: currencyFmt,
-                                theme: theme,
-                                onDelete: () async {
-                                  await budgetUseCase.deleteBudget(budget.id);
-                                },
-                              ),
-                            );
-                          },
-                          childCount: budgets.length,
-                        ),
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                              vertical: AppSpacing.sm,
+                            ),
+                            child: _BudgetCard(
+                              budget: budget,
+                              spent: spent,
+                              ratio: ratio,
+                              currencyFmt: currencyFmt,
+                              theme: theme,
+                              onDelete: () async {
+                                await budgetUseCase.deleteBudget(budget.id);
+                              },
+                            ),
+                          );
+                        }, childCount: budgets.length),
                       ),
 
                     const SliverToBoxAdapter(child: SizedBox(height: 80)),
@@ -204,8 +210,8 @@ class _BudgetCard extends StatelessWidget {
           color: isOverspent
               ? AppColors.error.withOpacity(0.5)
               : isWarning
-                  ? AppColors.warning.withOpacity(0.5)
-                  : theme.dividerColor,
+              ? AppColors.warning.withOpacity(0.5)
+              : theme.dividerColor,
         ),
       ),
       child: Column(
@@ -262,7 +268,7 @@ class _BudgetCard extends StatelessWidget {
               Text(
                 'Limit: ${currencyFmt.format(budget.limitAmount)}',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.onSurfaceVariantDark,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -349,7 +355,7 @@ class _AddBudgetSheetState extends ConsumerState<_AddBudgetSheet> {
           Text(
             DateFormat('MMMM yyyy').format(DateTime.now()),
             style: theme.textTheme.bodySmall?.copyWith(
-              color: AppColors.onSurfaceVariantDark,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           AppSpacing.h24,
@@ -358,9 +364,7 @@ class _AddBudgetSheetState extends ConsumerState<_AddBudgetSheet> {
             value: _selectedCategory,
             decoration: const InputDecoration(
               labelText: 'Category',
-              border: OutlineInputBorder(
-                borderRadius: AppRadius.borderMd,
-              ),
+              border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
             ),
             items: widget.categories
                 .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -388,7 +392,9 @@ class _AddBudgetSheetState extends ConsumerState<_AddBudgetSheet> {
           AppSpacing.h24,
           FilledButton(
             onPressed: _isLoading ? null : _submit,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+            ),
             child: _isLoading
                 ? const CircularProgressIndicator(color: Colors.white)
                 : const Text('Save Budget'),
@@ -430,6 +436,7 @@ class _EmptyBudgetState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -447,11 +454,11 @@ class _EmptyBudgetState extends StatelessWidget {
             ),
           ),
           AppSpacing.h8,
-          const Text(
+          Text(
             'Set spending limits for your categories\nto stay on track.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppColors.onSurfaceVariantDark,
+              color: theme.colorScheme.onSurfaceVariant,
               fontSize: 13,
             ),
           ),

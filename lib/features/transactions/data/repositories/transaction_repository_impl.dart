@@ -6,6 +6,7 @@ import '../../../../core/error/result.dart';
 import '../../../../core/logger/app_logger.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../../domain/repositories/transaction_repository.dart';
+import '../../../sms_intelligence/domain/services/transaction_deduplication.dart';
 
 extension on TransactionsTableData {
   TransactionEntity toEntity() {
@@ -18,6 +19,8 @@ extension on TransactionsTableData {
       timestamp: timestamp,
       isIncome: isIncome,
       accountSource: accountSource,
+      reference: reference,
+      currency: currency,
     );
   }
 }
@@ -33,6 +36,8 @@ extension on TransactionEntity {
       timestamp: Value(timestamp),
       isIncome: Value(isIncome),
       accountSource: Value(accountSource),
+      reference: Value(reference),
+      currency: Value(currency),
     );
   }
 }
@@ -128,5 +133,39 @@ class TransactionRepositoryImpl implements TransactionRepository {
       AppLogger.e('Failed to calculate category aggregates', e, stackTrace);
       return Left(DatabaseFailure(e.toString()));
     }
+  }
+
+  @override
+  Future<List<TransactionEntity>> findPotentialDuplicates(
+    TransactionEntity transaction,
+  ) async {
+    if (!TransactionDeduplication.hasUpiReference(transaction.reference)) {
+      return const [];
+    }
+
+    const window = TransactionDeduplication.upiDuplicateWindow;
+    final start = transaction.timestamp.subtract(window);
+    final end = transaction.timestamp.add(window);
+
+    final query = _db.select(_db.transactionsTable)
+      ..where(
+        (t) =>
+            t.reference.equals(transaction.reference!) &
+            t.amount.equals(transaction.amount) &
+            t.isIncome.equals(transaction.isIncome) &
+            t.timestamp.isBiggerOrEqualValue(start) &
+            t.timestamp.isSmallerOrEqualValue(end),
+      );
+
+    final rows = await query.get();
+    final candidates = rows.map((r) => r.toEntity()).toList();
+
+    return candidates.where((candidate) {
+      return candidate.id != transaction.id &&
+          TransactionDeduplication.isSameUpiTransactionEntity(
+            candidate,
+            transaction,
+          );
+    }).toList();
   }
 }

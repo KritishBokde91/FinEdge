@@ -9,8 +9,9 @@ import '../../../../shared/widgets/inputs/app_filter_chip.dart';
 import '../../../../shared/widgets/transactions/transaction_tile.dart';
 import '../../../../shared/widgets/dialogs/add_transaction_dialog.dart';
 import '../../domain/entities/transaction_entity.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../main.dart';
+import '../../../../core/di/contacts_providers.dart';
 
 class TransactionsPage extends ConsumerStatefulWidget {
   const TransactionsPage({super.key});
@@ -50,6 +51,9 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final txRepository = ref.watch(transactionRepositoryProvider);
+    final prefs = ref.watch(preferencesServiceProvider);
+    final resolver = ref.watch(contactsResolverProvider);
+    final useContactsForVpa = prefs.useContactsForVpa();
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -162,53 +166,63 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
 
                   final keysList = groupedTx.keys.toList();
 
-                  return ListView.builder(
-                    itemCount: keysList.length,
-                    itemBuilder: (context, index) {
-                      final groupDate = keysList[index];
-                      final groupItems = groupedTx[groupDate]!;
+                  return ListenableBuilder(
+                    listenable: resolver,
+                    builder: (context, _) {
+                      return ListView.builder(
+                        itemCount: keysList.length,
+                        itemBuilder: (context, index) {
+                          final groupDate = keysList[index];
+                          final groupItems = groupedTx[groupDate]!;
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.lg,
-                              vertical: AppSpacing.md,
-                            ),
-                            child: Text(
-                              groupDate,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: AppColors.onSurfaceVariantDark,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.lg,
+                                  vertical: AppSpacing.md,
+                                ),
+                                child: Text(
+                                  groupDate,
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: groupItems.length,
-                            separatorBuilder: (context, index) =>
-                                const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final tx = groupItems[index];
-                              return TransactionTile(
-                                title: tx.merchant,
-                                category: tx.category,
-                                amount: tx.amount,
-                                isIncome: tx.isIncome,
-                                date: tx.timestamp,
-                                accountSource: tx.accountSource,
-                                onTap: () {
-                                  context.go(
-                                    '${RouteNames.transactionsPath}/details/${tx.id}',
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: groupItems.length,
+                                separatorBuilder: (context, index) =>
+                                    const Divider(height: 1),
+                                itemBuilder: (context, index) {
+                                  final tx = groupItems[index];
+                                  final displayName = resolver
+                                      .displayMerchantName(
+                                        tx.merchant,
+                                        useContactsForVpa,
+                                      );
+                                  return TransactionTile(
+                                    title: displayName ?? tx.merchant,
+                                    category: tx.category,
+                                    amount: tx.amount,
+                                    isIncome: tx.isIncome,
+                                    date: tx.timestamp,
+                                    accountSource: tx.accountSource,
+                                    onTap: () {
+                                      context.go(
+                                        '${RouteNames.transactionsPath}/details/${tx.id}',
+                                      );
+                                    },
                                   );
                                 },
-                              );
-                            },
-                          ),
-                        ],
+                              ),
+                            ],
+                          );
+                        },
                       );
                     },
                   );

@@ -84,4 +84,28 @@ class PermissionService {
       return false;
     }
   }
+
+  /// Check contacts permission status
+  Future<bool> checkContactsPermission() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final bool granted = await _channel.invokeMethod('checkContactsPermission') ?? false;
+      return granted;
+    } catch (e, stackTrace) {
+      AppLogger.e('Failed to check contacts permission status', e, stackTrace);
+      return false;
+    }
+  }
+
+  /// Request contacts permission
+  Future<bool> requestContactsPermission() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final bool triggered = await _channel.invokeMethod('requestContactsPermission') ?? false;
+      return triggered;
+    } catch (e, stackTrace) {
+      AppLogger.e('Failed to request contacts permissions', e, stackTrace);
+      return false;
+    }
+  }
 }

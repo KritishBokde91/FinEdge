@@ -146,7 +146,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  _isSetMode ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
+                  _isSetMode
+                      ? Icons.lock_open_rounded
+                      : Icons.lock_outline_rounded,
                   size: 48,
                   color: theme.colorScheme.primary,
                 ),
@@ -162,7 +164,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
               Text(
                 _subtitleText,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppColors.onSurfaceVariantDark,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               AppSpacing.h40,

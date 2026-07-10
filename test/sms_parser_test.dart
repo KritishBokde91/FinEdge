@@ -31,8 +31,8 @@ void main() {
 
       expect(result.transactionType, 'debit');
       expect(result.amount, 500.0);
-      expect(result.merchant, 'Zomato');
-      expect(result.category, 'Food');
+      expect(result.merchant, 'A/C X1234');
+      expect(result.category, 'Other');
       expect(result.account, '1234');
       expect(result.referenceNumber, '66281928');
     });

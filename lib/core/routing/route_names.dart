@@ -38,4 +38,7 @@ abstract class RouteNames {
 
   static const String goals = 'goals';
   static const String goalsPath = '/goals';
+
+  static const String upgrade = 'upgrade';
+  static const String upgradePath = '/upgrade';
 }

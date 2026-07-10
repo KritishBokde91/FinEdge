@@ -59,6 +59,9 @@ dependencies:
   intl: ^0.20.3
   google_fonts: ^8.1.0
 
+  # Cryptography (for ParsedTransaction.generateTransactionId — MD5 hash)
+  crypto: ^3.0.3
+
   # Native & System Services
   workmanager: ^0.9.0+3
   local_auth: ^3.0.1

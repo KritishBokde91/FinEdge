@@ -14,6 +14,8 @@ abstract class TransactionEntity with _$TransactionEntity {
     required DateTime timestamp,
     required bool isIncome,
     required String accountSource,
+    String? reference,
+    @Default('INR') String currency,
   }) = _TransactionEntity;
 
   factory TransactionEntity.fromJson(Map<String, dynamic> json) =>

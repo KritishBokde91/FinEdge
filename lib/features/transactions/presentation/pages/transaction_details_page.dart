@@ -49,6 +49,11 @@ class TransactionDetailsPage extends ConsumerWidget {
               final formattedTime = DateFormat(
                 'MMMM dd, yyyy • hh:mm a',
               ).format(tx.timestamp);
+              final formattedAmount =
+                  '${tx.isIncome ? '+' : '-'} ${tx.currency} ${tx.amount.toStringAsFixed(2)}';
+              final referenceCode = tx.reference?.trim().isNotEmpty == true
+                  ? tx.reference!.trim()
+                  : 'TX-${tx.id.substring(0, 8).toUpperCase()}';
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.lg),
@@ -72,7 +77,7 @@ class TransactionDetailsPage extends ConsumerWidget {
                           TransactionBadge(label: tx.category),
                           AppSpacing.h24,
                           Text(
-                            '${tx.isIncome ? '+' : '-'} Ksh ${tx.amount.toStringAsFixed(2)}',
+                            formattedAmount,
                             style: theme.textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: tx.isIncome
@@ -84,7 +89,7 @@ class TransactionDetailsPage extends ConsumerWidget {
                           Text(
                             formattedTime,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppColors.onSurfaceVariantDark,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -103,16 +108,19 @@ class TransactionDetailsPage extends ConsumerWidget {
                       child: Column(
                         children: [
                           _buildDetailRow(
+                            context: context,
                             label: 'Account Source',
                             value: tx.accountSource,
                           ),
                           const Divider(height: 24),
                           _buildDetailRow(
+                            context: context,
                             label: 'Reference Code',
-                            value: 'TX-${tx.id.substring(0, 8).toUpperCase()}',
+                            value: referenceCode,
                           ),
                           const Divider(height: 24),
                           _buildDetailRow(
+                            context: context,
                             label: 'Status',
                             value: 'Completed',
                             valueColor: AppColors.success,
@@ -168,17 +176,19 @@ class TransactionDetailsPage extends ConsumerWidget {
   }
 
   Widget _buildDetailRow({
+    required BuildContext context,
     required String label,
     required String value,
     Color? valueColor,
   }) {
+    final theme = Theme.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: AppColors.onSurfaceVariantDark,
+          style: TextStyle(
+            color: theme.colorScheme.onSurfaceVariant,
             fontSize: 13,
           ),
         ),

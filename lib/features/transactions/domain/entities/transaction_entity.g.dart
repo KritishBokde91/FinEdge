@@ -16,6 +16,8 @@ _TransactionEntity _$TransactionEntityFromJson(Map<String, dynamic> json) =>
       timestamp: DateTime.parse(json['timestamp'] as String),
       isIncome: json['isIncome'] as bool,
       accountSource: json['accountSource'] as String,
+      reference: json['reference'] as String?,
+      currency: json['currency'] as String? ?? 'INR',
     );
 
 Map<String, dynamic> _$TransactionEntityToJson(_TransactionEntity instance) =>
@@ -28,4 +30,6 @@ Map<String, dynamic> _$TransactionEntityToJson(_TransactionEntity instance) =>
       'timestamp': instance.timestamp.toIso8601String(),
       'isIncome': instance.isIncome,
       'accountSource': instance.accountSource,
+      'reference': instance.reference,
+      'currency': instance.currency,
     };

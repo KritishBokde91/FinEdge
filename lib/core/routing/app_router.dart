@@ -14,10 +14,12 @@ import '../../features/transactions/presentation/pages/transaction_details_page.
 import '../../features/sms_intelligence/presentation/pages/sms_intelligence_page.dart';
 import '../../features/analytics/presentation/pages/analytics_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/ai_assistant/presentation/pages/ai_assistant_page.dart';
 
 // Sub-routes (pushed on top of tabs, not part of bottom-nav shell)
 import '../../features/budget_planner/presentation/pages/budget_planner_page.dart';
 import '../../features/financial_goals/presentation/pages/goals_page.dart';
+import '../../features/billing/presentation/pages/upgrade_page.dart';
 
 class _ErrorView extends StatelessWidget {
   final Exception? error;
@@ -87,6 +89,11 @@ abstract class AppRouter {
         name: RouteNames.goals,
         builder: (context, state) => const GoalsPage(),
       ),
+      GoRoute(
+        path: RouteNames.upgradePath,
+        name: RouteNames.upgrade,
+        builder: (context, state) => const UpgradePage(),
+      ),
 
       // --- Stateful Bottom Navigation Tab Shell ---
       StatefulShellRoute.indexedStack(
@@ -137,14 +144,21 @@ abstract class AppRouter {
               ),
             ],
           ),
-          // Tab 3: SMS Intelligence / AI Assistant
+          // Tab 3: AI Assistant / Coach
           StatefulShellBranch(
             navigatorKey: _aiNavigatorKey,
             routes: [
               GoRoute(
                 path: RouteNames.aiPath,
                 name: RouteNames.ai,
-                builder: (context, state) => const SmsIntelligencePage(),
+                builder: (context, state) => const AiAssistantPage(),
+                routes: [
+                  GoRoute(
+                    path: 'sms_logs',
+                    name: 'sms_logs',
+                    builder: (context, state) => const SmsIntelligencePage(),
+                  ),
+                ],
               ),
             ],
           ),

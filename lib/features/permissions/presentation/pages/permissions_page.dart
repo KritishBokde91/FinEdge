@@ -74,6 +74,14 @@ class _PermissionsPageState extends ConsumerState<PermissionsPage> {
         setState(() {
           _biometricsEnabled = true;
         });
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Biometric authentication is unavailable on this screen right now.',
+            ),
+          ),
+        );
       }
     } else {
       await ref.read(preferencesServiceProvider).setBiometricEnabled(false);
@@ -105,7 +113,7 @@ class _PermissionsPageState extends ConsumerState<PermissionsPage> {
               Text(
                 'FinSight operates completely on-device. Your SMS data never leaves this machine.',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppColors.onSurfaceVariantDark,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               AppSpacing.h32,
@@ -162,7 +170,7 @@ class _PermissionsPageState extends ConsumerState<PermissionsPage> {
                           Text(
                             'Secure your dashboard using fingerprints or face unlock.',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppColors.onSurfaceVariantDark,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -229,7 +237,7 @@ class _PermissionsPageState extends ConsumerState<PermissionsPage> {
                 Text(
                   description,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.onSurfaceVariantDark,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -241,7 +249,7 @@ class _PermissionsPageState extends ConsumerState<PermissionsPage> {
                 : Icons.radio_button_unchecked,
             color: isGranted
                 ? AppColors.success
-                : AppColors.onSurfaceVariantDark,
+                : theme.colorScheme.onSurfaceVariant,
             size: 28,
           ),
         ],

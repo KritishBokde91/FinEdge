@@ -17,15 +17,26 @@ class GoalsPage extends ConsumerStatefulWidget {
 
 class _GoalsPageState extends ConsumerState<GoalsPage> {
   static const List<String> _availableCategories = [
-    'Emergency Fund', 'Vacation', 'Car', 'Home', 'Education',
-    'Retirement', 'Investment', 'Wedding', 'Electronics', 'Other',
+    'Emergency Fund',
+    'Vacation',
+    'Car',
+    'Home',
+    'Education',
+    'Retirement',
+    'Investment',
+    'Wedding',
+    'Electronics',
+    'Other',
   ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final useCase = ref.watch(manageGoalUseCaseProvider);
-    final currencyFmt = NumberFormat.simpleCurrency(name: 'INR', decimalDigits: 0);
+    final currencyFmt = NumberFormat.simpleCurrency(
+      name: 'INR',
+      decimalDigits: 0,
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -75,7 +86,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                       ),
                       child: _GoalSummaryStrip(
                         total: goals.length,
-                        completed: progresses.where((p) => p.isCompleted).length,
+                        completed: progresses
+                            .where((p) => p.isCompleted)
+                            .length,
                         theme: theme,
                       ),
                     ),
@@ -90,30 +103,27 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                   )
                 else
                   SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final progress = progresses[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.sm,
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final progress = progresses[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                          vertical: AppSpacing.sm,
+                        ),
+                        child: _GoalCard(
+                          progress: progress,
+                          currencyFmt: currencyFmt,
+                          theme: theme,
+                          onDelete: () => useCase.deleteGoal(progress.goal.id),
+                          onAddFunds: () => _showAddFundsSheet(
+                            context,
+                            useCase,
+                            progress.goal,
+                            currencyFmt,
                           ),
-                          child: _GoalCard(
-                            progress: progress,
-                            currencyFmt: currencyFmt,
-                            theme: theme,
-                            onDelete: () => useCase.deleteGoal(progress.goal.id),
-                            onAddFunds: () => _showAddFundsSheet(
-                              context,
-                              useCase,
-                              progress.goal,
-                              currencyFmt,
-                            ),
-                          ),
-                        );
-                      },
-                      childCount: progresses.length,
-                    ),
+                        ),
+                      );
+                    }, childCount: progresses.length),
                   ),
 
                 const SliverToBoxAdapter(child: SizedBox(height: 80)),
@@ -132,10 +142,8 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _AddGoalSheet(
-        useCase: useCase,
-        categories: _availableCategories,
-      ),
+      builder: (_) =>
+          _AddGoalSheet(useCase: useCase, categories: _availableCategories),
     );
   }
 
@@ -151,8 +159,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) =>
-          _AddFundsSheet(useCase: useCase, goal: goal, fmt: fmt),
+      builder: (_) => _AddFundsSheet(useCase: useCase, goal: goal, fmt: fmt),
     );
   }
 }
@@ -212,7 +219,7 @@ class _Stat extends StatelessWidget {
         Text(
           label,
           style: theme.textTheme.labelSmall?.copyWith(
-            color: AppColors.onSurfaceVariantDark,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -239,8 +246,9 @@ class _GoalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final goal = progress.goal;
     final pct = (progress.progressRatio * 100).clamp(0, 100).toStringAsFixed(0);
-    final progressColor =
-        progress.isCompleted ? AppColors.success : theme.colorScheme.primary;
+    final progressColor = progress.isCompleted
+        ? AppColors.success
+        : theme.colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -273,7 +281,7 @@ class _GoalCard extends StatelessWidget {
                     Text(
                       goal.category,
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: AppColors.onSurfaceVariantDark,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -321,7 +329,7 @@ class _GoalCard extends StatelessWidget {
               Text(
                 'Target: ${currencyFmt.format(goal.targetAmount)}',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.onSurfaceVariantDark,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -333,7 +341,7 @@ class _GoalCard extends StatelessWidget {
               Text(
                 '$pct% complete',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppColors.onSurfaceVariantDark,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               if (progress.daysRemaining != null)
@@ -342,14 +350,14 @@ class _GoalCard extends StatelessWidget {
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: progress.daysRemaining! <= 7
                         ? AppColors.error
-                        : AppColors.onSurfaceVariantDark,
+                        : theme.colorScheme.onSurfaceVariant,
                   ),
                 )
               else
                 Text(
                   '${currencyFmt.format(progress.remainingAmount)} remaining',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppColors.onSurfaceVariantDark,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
             ],
@@ -455,8 +463,9 @@ class _AddGoalSheetState extends ConsumerState<_AddGoalSheet> {
             AppSpacing.h16,
             TextField(
               controller: _targetController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(
                 labelText: 'Target Amount (₹)',
                 border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
@@ -466,8 +475,9 @@ class _AddGoalSheetState extends ConsumerState<_AddGoalSheet> {
             AppSpacing.h16,
             TextField(
               controller: _currentController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(
                 labelText: 'Amount Already Saved (₹)',
                 border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
@@ -498,8 +508,7 @@ class _AddGoalSheetState extends ConsumerState<_AddGoalSheet> {
               AppSpacing.h8,
               Text(
                 _errorMsg!,
-                style:
-                    const TextStyle(color: AppColors.error, fontSize: 13),
+                style: const TextStyle(color: AppColors.error, fontSize: 13),
               ),
             ],
             AppSpacing.h24,
@@ -524,9 +533,8 @@ class _AddGoalSheetState extends ConsumerState<_AddGoalSheet> {
     final target = double.tryParse(
       _targetController.text.trim().replaceAll(',', ''),
     );
-    final current = double.tryParse(
-          _currentController.text.trim().replaceAll(',', ''),
-        ) ??
+    final current =
+        double.tryParse(_currentController.text.trim().replaceAll(',', '')) ??
         0.0;
 
     if (title.isEmpty) {
@@ -614,7 +622,7 @@ class _AddFundsSheetState extends ConsumerState<_AddFundsSheet> {
           Text(
             'Currently saved: ${widget.fmt.format(widget.goal.currentAmount)} / ${widget.fmt.format(widget.goal.targetAmount)}',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: AppColors.onSurfaceVariantDark,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           AppSpacing.h24,
@@ -674,6 +682,7 @@ class _EmptyGoalsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -691,11 +700,11 @@ class _EmptyGoalsState extends StatelessWidget {
             ),
           ),
           AppSpacing.h8,
-          const Text(
+          Text(
             'Set financial goals to track your\nprogress toward what matters most.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppColors.onSurfaceVariantDark,
+              color: theme.colorScheme.onSurfaceVariant,
               fontSize: 13,
             ),
           ),

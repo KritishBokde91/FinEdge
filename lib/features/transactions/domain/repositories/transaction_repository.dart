@@ -21,4 +21,9 @@ abstract class TransactionRepository {
 
   /// Helper to calculate aggregate sum grouped by category
   Future<Result<Map<String, double>>> calculateCategoryAggregates();
+
+  /// Finds potential duplicates matching the transaction UPI reference
+  Future<List<TransactionEntity>> findPotentialDuplicates(
+    TransactionEntity transaction,
+  );
 }

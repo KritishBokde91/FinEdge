@@ -111,7 +111,7 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
             Text(
               'Manually record a financial transaction',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: AppColors.onSurfaceVariantDark,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             AppSpacing.h24,
@@ -145,8 +145,9 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
             // ── Amount Field ──
             TextField(
               controller: _amountController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(
                 labelText: 'Amount *',
                 border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
@@ -174,12 +175,7 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                 border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
               ),
               items: kTransactionCategories
-                  .map(
-                    (c) => DropdownMenuItem(
-                      value: c,
-                      child: Text(c),
-                    ),
-                  )
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                   .toList(),
               onChanged: (v) => setState(() => _selectedCategory = v!),
             ),
@@ -224,8 +220,9 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                 final picked = await showDatePicker(
                   context: context,
                   initialDate: _selectedDate,
-                  firstDate:
-                      DateTime.now().subtract(const Duration(days: 365 * 2)),
+                  firstDate: DateTime.now().subtract(
+                    const Duration(days: 365 * 2),
+                  ),
                   lastDate: DateTime.now(),
                 );
                 if (picked != null) setState(() => _selectedDate = picked);
@@ -269,8 +266,9 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
               onPressed: _isLoading ? null : _submit,
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
-                backgroundColor:
-                    _isIncome ? AppColors.success : theme.colorScheme.primary,
+                backgroundColor: _isIncome
+                    ? AppColors.success
+                    : theme.colorScheme.primary,
               ),
               child: _isLoading
                   ? const SizedBox(
@@ -292,9 +290,7 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          _isIncome
-                              ? 'Record Income'
-                              : 'Record Expense',
+                          _isIncome ? 'Record Income' : 'Record Expense',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -380,22 +376,22 @@ class _TypeButton extends StatelessWidget {
               : Theme.of(context).cardColor,
           borderRadius: AppRadius.borderMd,
           border: Border.all(
-            color: isSelected
-                ? selectedColor
-                : Theme.of(context).dividerColor,
+            color: isSelected ? selectedColor : Theme.of(context).dividerColor,
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon, color: isSelected ? selectedColor : Theme.of(context).hintColor),
+            Icon(
+              icon,
+              color: isSelected ? selectedColor : Theme.of(context).hintColor,
+            ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 color: isSelected ? selectedColor : Theme.of(context).hintColor,
-                fontWeight:
-                    isSelected ? FontWeight.bold : FontWeight.normal,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 13,
               ),
             ),

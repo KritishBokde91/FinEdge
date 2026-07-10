@@ -3,10 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../main.dart';
 import '../../../../core/routing/route_names.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/di/repository_providers.dart';
+import '../../../../core/di/billing_providers.dart';
+import '../../../../features/billing/domain/entities/purchase_result.dart';
+import '../../../../features/billing/data/repositories/simulated_billing_repository.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import '../../../../core/di/backup_providers.dart';
+import '../../../../features/backup/domain/entities/backup_models.dart';
+import '../../../../core/di/contacts_providers.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -22,6 +29,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final prefs = ref.watch(preferencesServiceProvider);
     final themeMode = prefs.getThemeMode();
     final biometricEnabled = prefs.isBiometricEnabled();
+    final useContactsForVpa = prefs.useContactsForVpa();
+    final isPro = ref.watch(isProProvider).value ?? false;
+    final gateway = ref.watch(purchaseGatewayProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -44,7 +54,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     Text(
                       'Manage your preferences and security',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: AppColors.onSurfaceVariantDark,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -84,17 +94,42 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'FinSight User',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
+                          Row(
+                            children: [
+                              const Text(
+                                'FinSight User',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                              if (isPro) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.amber,
+                                    borderRadius: AppRadius.borderSm,
+                                  ),
+                                  child: const Text(
+                                    'PRO',
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'AI-Powered Financial Coach',
+                            isPro ? 'Pro Member' : 'AI-Powered Financial Coach',
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.75),
                               fontSize: 13,
@@ -107,6 +142,70 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 ),
               ),
             ),
+            if (!isPro)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.amber, Colors.orange],
+                      ),
+                      borderRadius: AppRadius.borderLg,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.stars_rounded,
+                          color: Colors.black,
+                          size: 36,
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Upgrade to Premium',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                'Unlock statement importing, rules, and AI.',
+                                style: TextStyle(
+                                  color: Colors.black.withOpacity(0.8),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              context.pushNamed(RouteNames.upgrade),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadius.borderMd,
+                            ),
+                          ),
+                          child: const Text('Upgrade'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             const SliverToBoxAdapter(child: AppSpacing.h24),
 
             // ── Appearance ──
@@ -120,13 +219,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     subtitle: themeMode == 'light'
                         ? 'Light'
                         : themeMode == 'dark'
-                            ? 'Dark'
-                            : 'System Default',
+                        ? 'Dark'
+                        : 'System Default',
                     trailing: DropdownButton<String>(
                       value: themeMode,
                       underline: const SizedBox(),
                       items: const [
-                        DropdownMenuItem(value: 'system', child: Text('System')),
+                        DropdownMenuItem(
+                          value: 'system',
+                          child: Text('System'),
+                        ),
                         DropdownMenuItem(value: 'light', child: Text('Light')),
                         DropdownMenuItem(value: 'dark', child: Text('Dark')),
                       ],
@@ -154,15 +256,22 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     trailing: Switch(
                       value: biometricEnabled,
                       onChanged: (v) async {
-                        final permService =
-                            ref.read(permissionServiceProvider);
+                        final permService = ref.read(permissionServiceProvider);
                         if (v) {
-                          final success =
-                              await permService.authenticateWithBiometrics(
-                            reason: 'Enable biometric lock for FinSight',
-                          );
+                          final success = await permService
+                              .authenticateWithBiometrics(
+                                reason: 'Enable biometric lock for FinSight',
+                              );
                           if (success) {
                             await prefs.setBiometricEnabled(true);
+                          } else if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Biometric authentication is unavailable on this screen right now.',
+                                ),
+                              ),
+                            );
                           }
                         } else {
                           await prefs.setBiometricEnabled(false);
@@ -183,6 +292,38 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         context.goNamed(RouteNames.auth);
                       }
                     },
+                  ),
+                  _SettingsTile(
+                    icon: Icons.contacts_rounded,
+                    title: 'Resolve UPI VPAs via Contacts',
+                    subtitle: useContactsForVpa ? 'Enabled' : 'Disabled',
+                    trailing: Switch(
+                      value: useContactsForVpa,
+                      onChanged: (v) async {
+                        final permService = ref.read(permissionServiceProvider);
+                        if (v) {
+                          final granted = await permService
+                              .requestContactsPermission();
+                          if (granted) {
+                            await prefs.setUseContactsForVpa(true);
+                          } else {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Contacts permission is required to resolve VPAs.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        } else {
+                          await prefs.setUseContactsForVpa(false);
+                          ref.read(contactsResolverProvider).clearCache();
+                        }
+                        setState(() {});
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -208,6 +349,120 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             ),
                           ),
                         );
+                      }
+                    },
+                  ),
+                  _SettingsTile(
+                    icon: Icons.restore_rounded,
+                    title: 'Restore Store Purchases',
+                    subtitle: 'Re-check Play Store premium entitlements',
+                    onTap: () async {
+                      final result = await gateway.refresh();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              result is PurchaseSuccess
+                                  ? 'Store entitlements verified successfully.'
+                                  : 'Failed to restore: No active purchases.',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  if (gateway is SimulatedBillingRepository)
+                    _SettingsTile(
+                      icon: Icons.bug_report_outlined,
+                      title: 'Reset Pro Status (Simulated)',
+                      subtitle: 'Revoke and reset to Free tier',
+                      onTap: () async {
+                        await gateway.debugResetEntitlement();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Pro status has been reset.'),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  _SettingsTile(
+                    icon: Icons.backup_rounded,
+                    title: 'Export Backup JSON',
+                    subtitle: 'Save database backup to documents folder',
+                    onTap: () async {
+                      final exporter = ref.read(backupExporterProvider);
+                      final result = await exporter.exportBackup();
+                      if (context.mounted) {
+                        if (result is ExportSuccess) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Backup exported: ${result.file.path.split('/').last}',
+                              ),
+                            ),
+                          );
+                        } else if (result is ExportError) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(result.message)),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  _SettingsTile(
+                    icon: Icons.settings_backup_restore_rounded,
+                    title: 'Import Backup JSON',
+                    subtitle: 'Restore database and preferences from files',
+                    onTap: () async {
+                      final importer = ref.read(backupImporterProvider);
+                      final directory =
+                          await getApplicationDocumentsDirectory();
+                      final dir = Directory(directory.path);
+                      final files =
+                          dir
+                              .listSync()
+                              .where(
+                                (f) =>
+                                    f is File &&
+                                    f.path.contains('finsight_backup_'),
+                              )
+                              .toList()
+                            ..sort((a, b) => b.path.compareTo(a.path));
+
+                      if (context.mounted) {
+                        if (files.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'No backup files found in documents folder.',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+
+                        final latestFile = files.first as File;
+                        final jsonContent = await latestFile.readAsString();
+                        final result = await importer.importBackup(jsonContent);
+
+                        if (context.mounted) {
+                          if (result is ImportSuccess) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Import successful! Loaded ${result.importedTransactions} transactions, ${result.importedBudgets} budgets, ${result.importedGoals} goals.',
+                                ),
+                              ),
+                            );
+                            setState(() {});
+                          } else if (result is ImportError) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(result.message)),
+                            );
+                          }
+                        }
                       }
                     },
                   ),
@@ -261,7 +516,7 @@ class _SettingsSection extends StatelessWidget {
             child: Text(
               title.toUpperCase(),
               style: theme.textTheme.labelSmall?.copyWith(
-                color: AppColors.onSurfaceVariantDark,
+                color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
               ),
@@ -278,11 +533,7 @@ class _SettingsSection extends StatelessWidget {
                 for (int i = 0; i < children.length; i++) ...[
                   children[i],
                   if (i < children.length - 1)
-                    Divider(
-                      height: 1,
-                      indent: 56,
-                      color: theme.dividerColor,
-                    ),
+                    Divider(height: 1, indent: 56, color: theme.dividerColor),
                 ],
               ],
             ),
@@ -329,12 +580,10 @@ class _SettingsTile extends StatelessWidget {
               style: TextStyle(color: theme.hintColor, fontSize: 12),
             )
           : null,
-      trailing: trailing ??
+      trailing:
+          trailing ??
           (onTap != null
-              ? Icon(
-                  Icons.chevron_right_rounded,
-                  color: theme.hintColor,
-                )
+              ? Icon(Icons.chevron_right_rounded, color: theme.hintColor)
               : null),
       onTap: onTap,
     );

@@ -11,6 +11,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../sms_intelligence/domain/services/sms_sync_service.dart';
+import '../../../../main.dart';
+import '../../../../core/di/contacts_providers.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -23,9 +25,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    // Rescan on dashboard load so previous failed parser runs do not hide old SMS.
+    // Trigger a non-destructive sync when the dashboard first appears.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(smsSyncServiceProvider).syncInbox(forceResync: true);
+      ref.read(smsSyncServiceProvider).syncInbox();
     });
   }
 
@@ -33,8 +35,17 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final txRepository = ref.watch(transactionRepositoryProvider);
-    final currencyFormat = NumberFormat.simpleCurrency(name: 'INR', decimalDigits: 2);
-    final currencyFormatCompact = NumberFormat.simpleCurrency(name: 'INR', decimalDigits: 0);
+    final resolver = ref.watch(contactsResolverProvider);
+    final prefs = ref.watch(preferencesServiceProvider);
+    final useContactsForVpa = prefs.useContactsForVpa();
+    final currencyFormat = NumberFormat.simpleCurrency(
+      name: 'INR',
+      decimalDigits: 2,
+    );
+    final currencyFormatCompact = NumberFormat.simpleCurrency(
+      name: 'INR',
+      decimalDigits: 0,
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -60,8 +71,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             final balance = totalIncome - totalExpenses;
 
             return RefreshIndicator(
-              onRefresh: () =>
-                  ref.read(smsSyncServiceProvider).syncInbox(forceResync: true),
+              onRefresh: () => ref.read(smsSyncServiceProvider).syncInbox(),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(AppSpacing.lg),
@@ -78,11 +88,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                             Text(
                               'Welcome back,',
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: AppColors.onSurfaceVariantDark,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                             Text(
-                              'Kritish',
+                              'Your money snapshot',
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -92,12 +102,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         CircleAvatar(
                           backgroundColor: theme.colorScheme.primary
                               .withOpacity(0.12),
-                          child: Text(
-                            'K',
-                            style: TextStyle(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: Icon(
+                            Icons.account_balance_wallet_rounded,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                       ],
@@ -177,7 +184,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           onTap: () async {
                             final imported = await ref
                                 .read(smsSyncServiceProvider)
-                                .syncInbox(forceResync: true);
+                                .syncInbox();
                             if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -226,7 +233,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         borderRadius: AppRadius.borderLg,
                         border: Border.all(color: theme.dividerColor),
                       ),
-                      child: CustomPaint(painter: _LineChartPainter(transactions)),
+                      child: CustomPaint(
+                        painter: _LineChartPainter(transactions),
+                      ),
                     ),
                     AppSpacing.h24,
 
@@ -261,26 +270,35 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         ),
                       )
                     else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: transactions.length > 3
-                            ? 3
-                            : transactions.length,
-                        separatorBuilder: (context, index) =>
-                            const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final tx = transactions[index];
-                          return TransactionTile(
-                            title: tx.merchant,
-                            category: tx.category,
-                            amount: tx.amount,
-                            isIncome: tx.isIncome,
-                            date: tx.timestamp,
-                            accountSource: tx.accountSource,
-                            onTap: () {
-                              context.go(
-                                '${RouteNames.transactionsPath}/details/${tx.id}',
+                      ListenableBuilder(
+                        listenable: resolver,
+                        builder: (context, _) {
+                          return ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: transactions.length > 3
+                                ? 3
+                                : transactions.length,
+                            separatorBuilder: (context, index) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final tx = transactions[index];
+                              final displayName = resolver.displayMerchantName(
+                                tx.merchant,
+                                useContactsForVpa,
+                              );
+                              return TransactionTile(
+                                title: displayName ?? tx.merchant,
+                                category: tx.category,
+                                amount: tx.amount,
+                                isIncome: tx.isIncome,
+                                date: tx.timestamp,
+                                accountSource: tx.accountSource,
+                                onTap: () {
+                                  context.go(
+                                    '${RouteNames.transactionsPath}/details/${tx.id}',
+                                  );
+                                },
                               );
                             },
                           );
@@ -409,14 +427,14 @@ class _LineChartPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     final path = Path();
-    final double stepX = size.width / (balances.length - 1).clamp(1, double.infinity);
+    final double stepX =
+        size.width / (balances.length - 1).clamp(1, double.infinity);
 
     for (int i = 0; i < balances.length; i++) {
       final x = i * stepX;
-      final y = size.height -
-          ((balances[i] - minBal) /
-                  range *
-                  (size.height * 0.8) +
+      final y =
+          size.height -
+          ((balances[i] - minBal) / range * (size.height * 0.8) +
               (size.height * 0.1));
 
       if (i == 0) {

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TransactionEntity {
 
- String get id; String? get smsId; double get amount; String get merchant; String get category; DateTime get timestamp; bool get isIncome; String get accountSource;
+ String get id; String? get smsId; double get amount; String get merchant; String get category; DateTime get timestamp; bool get isIncome; String get accountSource; String? get reference; String get currency;
 /// Create a copy of TransactionEntity
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $TransactionEntityCopyWith<TransactionEntity> get copyWith => _$TransactionEntit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.smsId, smsId) || other.smsId == smsId)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.merchant, merchant) || other.merchant == merchant)&&(identical(other.category, category) || other.category == category)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp)&&(identical(other.isIncome, isIncome) || other.isIncome == isIncome)&&(identical(other.accountSource, accountSource) || other.accountSource == accountSource));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.smsId, smsId) || other.smsId == smsId)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.merchant, merchant) || other.merchant == merchant)&&(identical(other.category, category) || other.category == category)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp)&&(identical(other.isIncome, isIncome) || other.isIncome == isIncome)&&(identical(other.accountSource, accountSource) || other.accountSource == accountSource)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.currency, currency) || other.currency == currency));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,smsId,amount,merchant,category,timestamp,isIncome,accountSource);
+int get hashCode => Object.hash(runtimeType,id,smsId,amount,merchant,category,timestamp,isIncome,accountSource,reference,currency);
 
 @override
 String toString() {
-  return 'TransactionEntity(id: $id, smsId: $smsId, amount: $amount, merchant: $merchant, category: $category, timestamp: $timestamp, isIncome: $isIncome, accountSource: $accountSource)';
+  return 'TransactionEntity(id: $id, smsId: $smsId, amount: $amount, merchant: $merchant, category: $category, timestamp: $timestamp, isIncome: $isIncome, accountSource: $accountSource, reference: $reference, currency: $currency)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $TransactionEntityCopyWith<$Res>  {
   factory $TransactionEntityCopyWith(TransactionEntity value, $Res Function(TransactionEntity) _then) = _$TransactionEntityCopyWithImpl;
 @useResult
 $Res call({
- String id, String? smsId, double amount, String merchant, String category, DateTime timestamp, bool isIncome, String accountSource
+ String id, String? smsId, double amount, String merchant, String category, DateTime timestamp, bool isIncome, String accountSource, String? reference, String currency
 });
 
 
@@ -65,7 +65,7 @@ class _$TransactionEntityCopyWithImpl<$Res>
 
 /// Create a copy of TransactionEntity
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? smsId = freezed,Object? amount = null,Object? merchant = null,Object? category = null,Object? timestamp = null,Object? isIncome = null,Object? accountSource = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? smsId = freezed,Object? amount = null,Object? merchant = null,Object? category = null,Object? timestamp = null,Object? isIncome = null,Object? accountSource = null,Object? reference = freezed,Object? currency = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,smsId: freezed == smsId ? _self.smsId : smsId // ignore: cast_nullable_to_non_nullable
@@ -75,6 +75,8 @@ as String,category: null == category ? _self.category : category // ignore: cast
 as String,timestamp: null == timestamp ? _self.timestamp : timestamp // ignore: cast_nullable_to_non_nullable
 as DateTime,isIncome: null == isIncome ? _self.isIncome : isIncome // ignore: cast_nullable_to_non_nullable
 as bool,accountSource: null == accountSource ? _self.accountSource : accountSource // ignore: cast_nullable_to_non_nullable
+as String,reference: freezed == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
+as String?,currency: null == currency ? _self.currency : currency // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -160,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? smsId,  double amount,  String merchant,  String category,  DateTime timestamp,  bool isIncome,  String accountSource)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? smsId,  double amount,  String merchant,  String category,  DateTime timestamp,  bool isIncome,  String accountSource,  String? reference,  String currency)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TransactionEntity() when $default != null:
-return $default(_that.id,_that.smsId,_that.amount,_that.merchant,_that.category,_that.timestamp,_that.isIncome,_that.accountSource);case _:
+return $default(_that.id,_that.smsId,_that.amount,_that.merchant,_that.category,_that.timestamp,_that.isIncome,_that.accountSource,_that.reference,_that.currency);case _:
   return orElse();
 
 }
@@ -181,10 +183,10 @@ return $default(_that.id,_that.smsId,_that.amount,_that.merchant,_that.category,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? smsId,  double amount,  String merchant,  String category,  DateTime timestamp,  bool isIncome,  String accountSource)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? smsId,  double amount,  String merchant,  String category,  DateTime timestamp,  bool isIncome,  String accountSource,  String? reference,  String currency)  $default,) {final _that = this;
 switch (_that) {
 case _TransactionEntity():
-return $default(_that.id,_that.smsId,_that.amount,_that.merchant,_that.category,_that.timestamp,_that.isIncome,_that.accountSource);case _:
+return $default(_that.id,_that.smsId,_that.amount,_that.merchant,_that.category,_that.timestamp,_that.isIncome,_that.accountSource,_that.reference,_that.currency);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +203,10 @@ return $default(_that.id,_that.smsId,_that.amount,_that.merchant,_that.category,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? smsId,  double amount,  String merchant,  String category,  DateTime timestamp,  bool isIncome,  String accountSource)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? smsId,  double amount,  String merchant,  String category,  DateTime timestamp,  bool isIncome,  String accountSource,  String? reference,  String currency)?  $default,) {final _that = this;
 switch (_that) {
 case _TransactionEntity() when $default != null:
-return $default(_that.id,_that.smsId,_that.amount,_that.merchant,_that.category,_that.timestamp,_that.isIncome,_that.accountSource);case _:
+return $default(_that.id,_that.smsId,_that.amount,_that.merchant,_that.category,_that.timestamp,_that.isIncome,_that.accountSource,_that.reference,_that.currency);case _:
   return null;
 
 }
@@ -216,7 +218,7 @@ return $default(_that.id,_that.smsId,_that.amount,_that.merchant,_that.category,
 @JsonSerializable()
 
 class _TransactionEntity implements TransactionEntity {
-  const _TransactionEntity({required this.id, required this.smsId, required this.amount, required this.merchant, required this.category, required this.timestamp, required this.isIncome, required this.accountSource});
+  const _TransactionEntity({required this.id, required this.smsId, required this.amount, required this.merchant, required this.category, required this.timestamp, required this.isIncome, required this.accountSource, this.reference, this.currency = 'INR'});
   factory _TransactionEntity.fromJson(Map<String, dynamic> json) => _$TransactionEntityFromJson(json);
 
 @override final  String id;
@@ -227,6 +229,8 @@ class _TransactionEntity implements TransactionEntity {
 @override final  DateTime timestamp;
 @override final  bool isIncome;
 @override final  String accountSource;
+@override final  String? reference;
+@override@JsonKey() final  String currency;
 
 /// Create a copy of TransactionEntity
 /// with the given fields replaced by the non-null parameter values.
@@ -241,16 +245,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransactionEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.smsId, smsId) || other.smsId == smsId)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.merchant, merchant) || other.merchant == merchant)&&(identical(other.category, category) || other.category == category)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp)&&(identical(other.isIncome, isIncome) || other.isIncome == isIncome)&&(identical(other.accountSource, accountSource) || other.accountSource == accountSource));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransactionEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.smsId, smsId) || other.smsId == smsId)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.merchant, merchant) || other.merchant == merchant)&&(identical(other.category, category) || other.category == category)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp)&&(identical(other.isIncome, isIncome) || other.isIncome == isIncome)&&(identical(other.accountSource, accountSource) || other.accountSource == accountSource)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.currency, currency) || other.currency == currency));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,smsId,amount,merchant,category,timestamp,isIncome,accountSource);
+int get hashCode => Object.hash(runtimeType,id,smsId,amount,merchant,category,timestamp,isIncome,accountSource,reference,currency);
 
 @override
 String toString() {
-  return 'TransactionEntity(id: $id, smsId: $smsId, amount: $amount, merchant: $merchant, category: $category, timestamp: $timestamp, isIncome: $isIncome, accountSource: $accountSource)';
+  return 'TransactionEntity(id: $id, smsId: $smsId, amount: $amount, merchant: $merchant, category: $category, timestamp: $timestamp, isIncome: $isIncome, accountSource: $accountSource, reference: $reference, currency: $currency)';
 }
 
 
@@ -261,7 +265,7 @@ abstract mixin class _$TransactionEntityCopyWith<$Res> implements $TransactionEn
   factory _$TransactionEntityCopyWith(_TransactionEntity value, $Res Function(_TransactionEntity) _then) = __$TransactionEntityCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? smsId, double amount, String merchant, String category, DateTime timestamp, bool isIncome, String accountSource
+ String id, String? smsId, double amount, String merchant, String category, DateTime timestamp, bool isIncome, String accountSource, String? reference, String currency
 });
 
 
@@ -278,7 +282,7 @@ class __$TransactionEntityCopyWithImpl<$Res>
 
 /// Create a copy of TransactionEntity
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? smsId = freezed,Object? amount = null,Object? merchant = null,Object? category = null,Object? timestamp = null,Object? isIncome = null,Object? accountSource = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? smsId = freezed,Object? amount = null,Object? merchant = null,Object? category = null,Object? timestamp = null,Object? isIncome = null,Object? accountSource = null,Object? reference = freezed,Object? currency = null,}) {
   return _then(_TransactionEntity(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,smsId: freezed == smsId ? _self.smsId : smsId // ignore: cast_nullable_to_non_nullable
@@ -288,6 +292,8 @@ as String,category: null == category ? _self.category : category // ignore: cast
 as String,timestamp: null == timestamp ? _self.timestamp : timestamp // ignore: cast_nullable_to_non_nullable
 as DateTime,isIncome: null == isIncome ? _self.isIncome : isIncome // ignore: cast_nullable_to_non_nullable
 as bool,accountSource: null == accountSource ? _self.accountSource : accountSource // ignore: cast_nullable_to_non_nullable
+as String,reference: freezed == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
+as String?,currency: null == currency ? _self.currency : currency // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

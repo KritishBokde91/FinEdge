@@ -1,3 +1,5 @@
+import 'package:finsight_ai/core/enums/transaction_type.dart';
+import 'package:finsight_ai/features/sms_intelligence/domain/services/bank/bank_parser_factory.dart';
 import 'sender_filter.dart';
 
 /// Production-grade SMS parser modeled after PennyWise's proven parsing engine.
@@ -126,6 +128,57 @@ class SmsParser {
   // ── Main Parse Method ──────────────────────────────────────────
 
   static SmsParseResult parseMessage(String sender, String body) {
+    // 1. Try bank-specific parsers from BankParserFactory first
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final parsedTx = BankParserFactory.parse(body, sender, timestamp);
+
+    if (parsedTx != null) {
+      String txType = 'unknown';
+      switch (parsedTx.type) {
+        case TransactionType.income:
+          txType = 'credit';
+          break;
+        case TransactionType.expense:
+        case TransactionType.credit:
+        case TransactionType.transfer:
+        case TransactionType.investment:
+          txType = 'debit';
+          break;
+        case TransactionType.balanceUpdate:
+          txType = 'unknown';
+          break;
+      }
+
+      final lowerBody = body.toLowerCase();
+      final paymentMethod = _detectPaymentMethod(lowerBody);
+      final category = _classifyCategory(parsedTx.merchant, lowerBody);
+
+      // Score confidence
+      double confidence = 0.7; // default base for pattern-based native parsing
+      if (parsedTx.merchant != null) confidence += 0.15;
+      if (parsedTx.reference != null) confidence += 0.1;
+      if (parsedTx.balance != null) confidence += 0.05;
+      confidence = confidence.clamp(0.0, 1.0);
+
+      return SmsParseResult(
+        merchant: parsedTx.merchant,
+        amount: parsedTx.amount,
+        currency: parsedTx.currency,
+        bank: parsedTx.bankName,
+        account: parsedTx.accountLast4,
+        transactionType: txType,
+        referenceNumber: parsedTx.reference,
+        upiId: _extractUpiId(body),
+        availableBalance: parsedTx.balance,
+        paymentMethod: paymentMethod,
+        transactionStatus: 'success',
+        category: category,
+        confidence: confidence,
+        isFromCard: parsedTx.isFromCard,
+      );
+    }
+
+    // 2. Original Fallback generic parsing logic
     // Normalize: keep original for display but work with cleaned version
     final cleaned = body.replaceAll(RegExp(r'\s+'), ' ').trim();
     final lower = cleaned.toLowerCase();
