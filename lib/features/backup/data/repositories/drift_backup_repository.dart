@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/database/drift_database.dart';
 import '../../../../core/services/preferences_service.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../domain/entities/backup_models.dart';
 import '../../domain/repositories/backup_exporter.dart';
 import '../../domain/repositories/backup_importer.dart';
@@ -55,7 +56,7 @@ class DriftBackupRepository implements BackupExporter, BackupImporter {
         metadata: const BackupMetadata(
           exportId: 'finsight_export_v1',
           appVersion: '1.0.0',
-          databaseVersion: 2,
+          databaseVersion: AppConstants.databaseVersion,
         ),
         database: databaseSnapshot,
         preferences: preferencesSnapshot,
@@ -81,10 +82,10 @@ class DriftBackupRepository implements BackupExporter, BackupImporter {
       final decoded = json.decode(jsonContent) as Map<String, dynamic>;
       final payload = BackupPayload.fromJson(decoded);
 
-      // Check database version compatibility (must be compatible with current schema version 2)
-      if (payload.metadata.databaseVersion > 2) {
+      // Check database version compatibility
+      if (payload.metadata.databaseVersion > AppConstants.databaseVersion) {
         return ImportError(
-          'Database version ${payload.metadata.databaseVersion} is not compatible with local version 2.',
+          'Database version ${payload.metadata.databaseVersion} is not compatible with local version ${AppConstants.databaseVersion}. Please update the app.',
         );
       }
 

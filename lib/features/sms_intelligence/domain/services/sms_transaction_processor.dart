@@ -83,7 +83,7 @@ class SmsTransactionProcessor {
         );
       }
 
-      return saveParsedTransaction(parsedTransaction, body, smsId: smsId);
+      return await saveParsedTransaction(parsedTransaction, body, smsId: smsId);
     } catch (e) {
       return ProcessingResult(false, reason: e.toString());
     }
