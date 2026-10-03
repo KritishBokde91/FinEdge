@@ -75,7 +75,10 @@ abstract class AppRouter {
       GoRoute(
         path: RouteNames.authPath,
         name: RouteNames.auth,
-        builder: (context, state) => const AuthPage(),
+        builder: (context, state) {
+          final isChangingPin = state.uri.queryParameters['change'] == 'true';
+          return AuthPage(isChangingPin: isChangingPin);
+        },
       ),
 
       // --- Full-screen sub-routes (pushed over the bottom-nav shell) ---

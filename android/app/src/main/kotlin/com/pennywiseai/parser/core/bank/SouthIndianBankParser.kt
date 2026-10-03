@@ -1,5 +1,5 @@
 package com.pennywiseai.parser.core.bank
-
+import kotlin.time.ExperimentalTime
 import com.pennywiseai.parser.core.ParsedTransaction
 import com.pennywiseai.parser.core.TransactionType
 import kotlinx.datetime.Instant
@@ -15,6 +15,7 @@ import java.math.BigDecimal
  * - Balance updates
  * - Card transactions
  */
+@OptIn(ExperimentalTime::class)
 class SouthIndianBankParser : BaseIndianBankParser() {
 
     override fun getBankName() = "South Indian Bank"

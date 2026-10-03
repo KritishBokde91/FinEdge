@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/preferences_service.dart';
+import 'core/widgets/app_lifecycle_wrapper.dart';
 
 // Providers for global infrastructure services (injected in Riverpod)
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
@@ -57,6 +58,9 @@ class MyApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: currentThemeMode,
       routerConfig: AppRouter.router,
+      builder: (context, child) {
+        return AppLifecycleWrapper(child: child!);
+      },
     );
   }
 }
