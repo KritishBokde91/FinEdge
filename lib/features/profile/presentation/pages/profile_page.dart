@@ -256,6 +256,22 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     trailing: Switch(
                       value: biometricEnabled,
                       onChanged: (v) async {
+                        final rawPrefs = ref.read(sharedPreferencesProvider);
+                        final pin = rawPrefs.getString('user_pin');
+                        if (v && (pin == null || pin.isEmpty)) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Please set a security PIN first to enable Biometric Lock.',
+                                ),
+                              ),
+                            );
+                            context.goNamed(RouteNames.auth);
+                          }
+                          return;
+                        }
+
                         final permService = ref.read(permissionServiceProvider);
                         if (v) {
                           final success = await permService
@@ -285,11 +301,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     title: 'Change PIN',
                     subtitle: 'Update your app passcode',
                     onTap: () {
-                      // Clear stored pin, navigate to auth which will handle set mode
-                      final rawPrefs = ref.read(sharedPreferencesProvider);
-                      rawPrefs.remove('user_pin');
                       if (context.mounted) {
-                        context.goNamed(RouteNames.auth);
+                        context.pushNamed(
+                          RouteNames.auth,
+                          queryParameters: {'change': 'true'},
+                        );
                       }
                     },
                   ),
@@ -483,7 +499,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   _SettingsTile(
                     icon: Icons.auto_awesome_rounded,
                     title: 'Powered By',
-                    subtitle: 'On-device SMS Intelligence • PennyWise Engine',
+                    subtitle: 'On-device SMS Intelligence • FinSight Engine',
                   ),
                 ],
               ),

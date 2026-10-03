@@ -5,5 +5,5 @@ class LlmRepository {
   const LlmRepository();
 
   /// Gets the system instruction prompt template.
-  String getSystemPrompt() => 'You are PennyWise AI assistant specialized in personal finances.';
+  String getSystemPrompt() => 'You are FinSight AI assistant specialized in personal finances.';
 }

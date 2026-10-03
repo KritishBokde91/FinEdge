@@ -5,5 +5,5 @@ class ModelRepository {
   const ModelRepository();
 
   /// Gets local model version details.
-  String getModelVersion() => 'PennyWise-v1.0';
+  String getModelVersion() => 'FinSight-v1.0';
 }
