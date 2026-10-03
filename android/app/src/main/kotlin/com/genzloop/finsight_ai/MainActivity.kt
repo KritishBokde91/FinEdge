@@ -155,7 +155,7 @@ class MainActivity: FlutterFragmentActivity() {
     }
 
     private fun readInboxSms(limit: Int, since: Long): List<Map<String, Any?>> {
-        val cutoffTime = if (since > 0L) since else System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+        val cutoffTime = if (since > 0L) since else System.currentTimeMillis() - 90L * 24 * 60 * 60 * 1000
         android.util.Log.d("MainActivity", "readInboxSms called with limit=$limit, since=$since, cutoffTime=$cutoffTime")
         val list = ArrayList<Map<String, Any?>>()
         val uri = Uri.parse("content://sms/inbox")

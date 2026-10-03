@@ -213,6 +213,7 @@ class SmsSyncService {
       sender: sender,
       timestamp: timestamp,
       bankName: parsed['bank'] ?? sender,
+      transactionHash: parsed['id'],
       isFromCard: parsed['isFromCard']?.toLowerCase() == 'true',
       currency: parsed['currency'] ?? 'INR',
       isMobileWallet: parsed['isMobileWallet']?.toLowerCase() == 'true',
