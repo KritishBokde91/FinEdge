@@ -204,8 +204,15 @@ abstract class AppTheme {
         showDragHandle: true,
       ),
 
-      snackBarTheme: const SnackBarThemeData(
+      snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.secondaryLight,
+        contentTextStyle: TextStyle(
+          fontFamily: AppTypography.bodyFont,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+        actionTextColor: AppColors.primaryLight,
         behavior: SnackBarBehavior.floating,
         shape: AppRadius.shapeSm,
         elevation: 4,
@@ -502,8 +509,15 @@ abstract class AppTheme {
         showDragHandle: true,
       ),
 
-      snackBarTheme: const SnackBarThemeData(
-        backgroundColor: AppColors.surfaceDark,
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.surfaceVariantDark,
+        contentTextStyle: TextStyle(
+          fontFamily: AppTypography.bodyFont,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: AppColors.onSurfaceDark,
+        ),
+        actionTextColor: AppColors.primaryDark,
         behavior: SnackBarBehavior.floating,
         shape: AppRadius.shapeSm,
         elevation: 4,

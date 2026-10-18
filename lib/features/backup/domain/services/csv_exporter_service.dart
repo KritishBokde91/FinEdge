@@ -1,5 +1,6 @@
 import 'dart:io';
 import '../../../../core/database/drift_database.dart';
+import '../../../transactions/domain/entities/transaction_entity.dart';
 
 /// Service exporting transactions to CSV spreadsheets and clearing outdated files.
 ///
@@ -68,6 +69,55 @@ class CsvExporterService {
         '', // Account Last 4
         '', // Balance After
         '', // Description
+        '' // SMS Body
+      ];
+
+      buffer.writeln(row.map(_escapeCsvField).join(','));
+    }
+
+    await file.writeAsString(buffer.toString());
+    return file.path;
+  }
+
+  /// Exports domain [TransactionEntity] list to a local CSV file.
+  Future<String> exportTransactionEntities(
+    List<TransactionEntity> transactions, {
+    String? fileName,
+  }) async {
+    final exportDir = Directory('${cacheDir.path}/$_exportDirName');
+    if (!exportDir.existsSync()) {
+      exportDir.createSync(recursive: true);
+    }
+
+    // Clean up old exports
+    _cleanOldExports(exportDir);
+
+    final timestamp = DateTime.now().toIso8601String().replaceAll(':', '').replaceAll('.', '');
+    final finalFileName = fileName ?? 'transactions_$timestamp';
+    final file = File('${exportDir.path}/$finalFileName.csv');
+
+    final buffer = StringBuffer();
+    // Write Header
+    buffer.writeln(csvHeader.map(_escapeCsvField).join(','));
+
+    // Write Records
+    for (final tx in transactions) {
+      final dateStr = tx.timestamp.toIso8601String().split('T').first;
+      final timeStr = tx.timestamp.toIso8601String().split('T').last.split('.').first;
+      final typeLabel = tx.isIncome ? 'Income' : 'Expense';
+
+      final row = [
+        dateStr,
+        timeStr,
+        tx.merchant,
+        tx.category,
+        typeLabel,
+        tx.amount.toString(),
+        tx.currency,
+        tx.accountSource, // Bank Name
+        '', // Account Last 4
+        '', // Balance After
+        tx.reference ?? '', // Description / Reference
         '' // SMS Body
       ];
 

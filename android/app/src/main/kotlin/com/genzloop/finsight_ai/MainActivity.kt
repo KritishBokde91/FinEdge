@@ -13,15 +13,25 @@ import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class MainActivity: FlutterFragmentActivity() {
+class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL = "com.genzloop.finsight_ai/sms"
     private val PERMISSION_REQUEST_CODE = 101
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 102
     private val CONTACTS_PERMISSION_REQUEST_CODE = 103
+
     private var pendingSmsPermissionResult: MethodChannel.Result? = null
     private var pendingNotificationPermissionResult: MethodChannel.Result? = null
     private var pendingContactsPermissionResult: MethodChannel.Result? = null
+
+    // Background coroutine scope bound to activity lifecycle
+    private val activityScope = CoroutineScope(Dispatchers.Main + Job())
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -47,25 +57,68 @@ class MainActivity: FlutterFragmentActivity() {
                 }
                 "resolveContact" -> {
                     val phone = call.argument<String>("phone").orEmpty()
-                    result.success(queryContactName(phone))
+                    activityScope.launch {
+                        try {
+                            val contactName = withContext(Dispatchers.IO) {
+                                queryContactName(phone)
+                            }
+                            result.success(contactName)
+                        } catch (e: Exception) {
+                            result.error("CONTACT_RESOLVE_FAILED", e.message, null)
+                        }
+                    }
                 }
                 "readSms" -> {
                     val limit = numberArgument(call, "limit")?.toInt() ?: 1000
                     val since = numberArgument(call, "since") ?: 0L
-                    val smsList = readInboxSms(limit, since)
-                    result.success(smsList)
+                    activityScope.launch {
+                        try {
+                            val smsList = withContext(Dispatchers.IO) {
+                                readInboxSms(limit, since)
+                            }
+                            result.success(smsList)
+                        } catch (e: Exception) {
+                            result.error("SMS_READ_FAILED", e.message, null)
+                        }
+                    }
                 }
                 "parseSms" -> {
                     val sender = call.argument<String>("sender").orEmpty()
                     val body = call.argument<String>("body").orEmpty()
                     val timestamp = numberArgument(call, "timestamp") ?: System.currentTimeMillis()
-                    result.success(parseTransaction(sender, body, timestamp))
+                    activityScope.launch {
+                        try {
+                            val parsed = withContext(Dispatchers.Default) {
+                                parseTransaction(sender, body, timestamp)
+                            }
+                            result.success(parsed)
+                        } catch (e: Exception) {
+                            result.error("SMS_PARSE_FAILED", e.message, null)
+                        }
+                    }
                 }
                 else -> {
                     result.notImplemented()
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        // Cancel all pending background coroutines to prevent leaks
+        activityScope.cancel()
+
+        // Clean up any pending permission callbacks safely
+        pendingSmsPermissionResult?.error("ACTIVITY_DESTROYED", "Activity was destroyed before permission completed", null)
+        pendingSmsPermissionResult = null
+
+        pendingNotificationPermissionResult?.error("ACTIVITY_DESTROYED", "Activity was destroyed before permission completed", null)
+        pendingNotificationPermissionResult = null
+
+        pendingContactsPermissionResult?.error("ACTIVITY_DESTROYED", "Activity was destroyed before permission completed", null)
+        pendingContactsPermissionResult = null
+
+        super.onDestroy()
     }
 
     override fun onRequestPermissionsResult(
@@ -164,44 +217,40 @@ class MainActivity: FlutterFragmentActivity() {
         val selectionArgs = arrayOf(cutoffTime.toString())
         val sortOrder = "date DESC"
 
-        try {
-            val cursor = contentResolver.query(uri, projection, selection, selectionArgs, sortOrder)
-            android.util.Log.d("MainActivity", "Cursor queried. Count = ${cursor?.count ?: 0}")
-            cursor?.use {
-                val idIdx = cursor.getColumnIndex("_id")
-                val addressIdx = cursor.getColumnIndex("address")
-                val bodyIdx = cursor.getColumnIndex("body")
-                val dateIdx = cursor.getColumnIndex("date")
+        val cursor = contentResolver.query(uri, projection, selection, selectionArgs, sortOrder)
+            ?: throw IllegalStateException("ContentResolver returned null cursor for SMS inbox")
 
-                var count = 0
-                while (cursor.moveToNext() && count < limit) {
-                    val sender = if (addressIdx >= 0) cursor.getString(addressIdx).orEmpty() else ""
-                    
-                    // Discard promotional (-P) and government (-G) messages
-                    val upperSender = sender.uppercase()
-                    if (upperSender.endsWith("-P") || upperSender.endsWith("-G")) {
-                        continue
-                    }
+        cursor.use {
+            val idIdx = cursor.getColumnIndex("_id")
+            val addressIdx = cursor.getColumnIndex("address")
+            val bodyIdx = cursor.getColumnIndex("body")
+            val dateIdx = cursor.getColumnIndex("date")
 
-                    val body = if (bodyIdx >= 0) cursor.getString(bodyIdx).orEmpty() else ""
-                    val date = if (dateIdx >= 0) cursor.getLong(dateIdx) else 0L
-                    val map = HashMap<String, Any?>()
-                    map["id"] = if (idIdx >= 0) cursor.getString(idIdx).orEmpty() else ""
-                    map["address"] = sender
-                    map["body"] = body
-                    map["date"] = date
-                    
-                    val parsed = parseTransaction(sender, body, date)
-                    if (parsed != null) {
-                        android.util.Log.d("MainActivity", "Successfully parsed transaction from $sender: amount=${parsed["amount"]}, type=${parsed["transactionType"]}")
-                        map["parsed"] = parsed
-                    }
-                    list.add(map)
-                    count++
+            var count = 0
+            while (cursor.moveToNext() && count < limit) {
+                val sender = if (addressIdx >= 0) cursor.getString(addressIdx).orEmpty() else ""
+                
+                // Discard promotional (-P) and government (-G) messages
+                val upperSender = sender.uppercase()
+                if (upperSender.endsWith("-P") || upperSender.endsWith("-G")) {
+                    continue
                 }
+
+                val body = if (bodyIdx >= 0) cursor.getString(bodyIdx).orEmpty() else ""
+                val date = if (dateIdx >= 0) cursor.getLong(dateIdx) else 0L
+                val map = HashMap<String, Any?>()
+                map["id"] = if (idIdx >= 0) cursor.getString(idIdx).orEmpty() else ""
+                map["address"] = sender
+                map["body"] = body
+                map["date"] = date
+                
+                val parsed = parseTransaction(sender, body, date)
+                if (parsed != null) {
+                    map["parsed"] = parsed
+                }
+                list.add(map)
+                count++
             }
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Error querying inbox", e)
         }
         android.util.Log.d("MainActivity", "readInboxSms completed. Returning ${list.size} messages.")
         return list

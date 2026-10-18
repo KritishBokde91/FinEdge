@@ -30,6 +30,10 @@ class DriftBackupRepository implements BackupExporter, BackupImporter {
       final alertList = await _db.select(_db.fraudAlertsTable).get();
       final insightList = await _db.select(_db.aiInsightsTable).get();
       final notifyList = await _db.select(_db.notificationsTable).get();
+      final ruleList = await _db.select(_db.rulesTable).get();
+      final catList = await _db.select(_db.categoriesTable).get();
+      final cardList = await _db.select(_db.cardsTable).get();
+      final mappingList = await _db.select(_db.merchantMappingsTable).get();
 
       // 2. Package database snapshot
       final databaseSnapshot = DatabaseSnapshot(
@@ -41,6 +45,10 @@ class DriftBackupRepository implements BackupExporter, BackupImporter {
         notifications: notifyList.map((e) => e.toJson()).toList(),
         fraudAlerts: alertList.map((e) => e.toJson()).toList(),
         aiInsights: insightList.map((e) => e.toJson()).toList(),
+        rules: ruleList.map((e) => e.toJson()).toList(),
+        categories: catList.map((e) => e.toJson()).toList(),
+        cards: cardList.map((e) => e.toJson()).toList(),
+        merchantMappings: mappingList.map((e) => e.toJson()).toList(),
       );
 
       // 3. Package preferences
@@ -97,6 +105,46 @@ class DriftBackupRepository implements BackupExporter, BackupImporter {
 
       // Wrap whole import in a single transaction for atomicity (all-or-nothing rollback)
       await _db.transaction(() async {
+        // Import Categories first (dependency for some structures)
+        for (final item in payload.database.categories) {
+          final row = CategoriesTableData.fromJson(item);
+          final inserted = await _db.into(_db.categoriesTable).insert(
+                row,
+                mode: InsertMode.insertOrIgnore,
+              );
+          if (inserted == 0) duplicateCount++;
+        }
+
+        // Import Cards
+        for (final item in payload.database.cards) {
+          final row = CardsTableData.fromJson(item);
+          final inserted = await _db.into(_db.cardsTable).insert(
+                row,
+                mode: InsertMode.insertOrIgnore,
+              );
+          if (inserted == 0) duplicateCount++;
+        }
+
+        // Import Merchant Mappings
+        for (final item in payload.database.merchantMappings) {
+          final row = MerchantMappingsTableData.fromJson(item);
+          final inserted = await _db.into(_db.merchantMappingsTable).insert(
+                row,
+                mode: InsertMode.insertOrIgnore,
+              );
+          if (inserted == 0) duplicateCount++;
+        }
+
+        // Import Rules
+        for (final item in payload.database.rules) {
+          final row = RulesTableData.fromJson(item);
+          final inserted = await _db.into(_db.rulesTable).insert(
+                row,
+                mode: InsertMode.insertOrIgnore,
+              );
+          if (inserted == 0) duplicateCount++;
+        }
+
         // Import SMS Metadata
         for (final item in payload.database.smsMetadata) {
           final row = SmsMetadataTableData.fromJson(item);

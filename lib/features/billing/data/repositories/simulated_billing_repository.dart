@@ -115,4 +115,10 @@ class SimulatedBillingRepository implements PurchaseGateway {
     await _prefs.setBool(_keyIsPro, false);
     _isProController.add(false);
   }
+
+  /// Closes active broadcast controllers.
+  void dispose() {
+    _isProController.close();
+    _productsController.close();
+  }
 }

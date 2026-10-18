@@ -39,7 +39,8 @@ class IciciBankParser extends BaseIndianBankParser {
 
     final type = transferAccounts != null
         ? TransactionType.transfer
-        : (extractTransactionType(smsBody) ?? (throw _NullTypeException()));
+        : extractTransactionType(smsBody);
+    if (type == null) return null;
 
     // Extract currency dynamically for multi-currency support
     final currency = _extractCurrencyFromMessage(smsBody) ?? 'INR';
@@ -591,6 +592,3 @@ class IciciBankParser extends BaseIndianBankParser {
     return super.extractTransactionType(message);
   }
 }
-
-/// Sentinel used to break parse() without an extra flag variable.
-class _NullTypeException implements Exception {}

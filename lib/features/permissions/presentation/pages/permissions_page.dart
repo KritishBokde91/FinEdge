@@ -205,8 +205,12 @@ class _PermissionsPageState extends ConsumerState<PermissionsPage> {
               const Spacer(),
               AppButton(
                 text: 'Continue',
-                onPressed: () {
-                  context.goNamed(RouteNames.home);
+                onPressed: () async {
+                  final prefs = ref.read(preferencesServiceProvider);
+                  await prefs.setPermissionsCompleted(true);
+                  if (context.mounted) {
+                    context.goNamed(RouteNames.home);
+                  }
                 },
               ),
               AppSpacing.h24,

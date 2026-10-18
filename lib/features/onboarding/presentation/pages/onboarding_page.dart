@@ -38,10 +38,15 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     },
   ];
 
-  Future<void> _completeOnboarding() async {
+  Future<void> _completeOnboarding({bool openCloudLogin = false}) async {
     final prefs = ref.read(preferencesServiceProvider);
     await prefs.setOnboardingCompleted(true);
-    if (mounted) {
+    if (!mounted) return;
+
+    if (openCloudLogin) {
+      // Navigate to cloud login first, which then proceeds to permissions/home
+      context.goNamed(RouteNames.cloudLogin);
+    } else {
       context.goNamed(RouteNames.permissions);
     }
   }
@@ -153,43 +158,55 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 horizontal: AppSpacing.xxl,
                 vertical: AppSpacing.lg,
               ),
-              child: Row(
-                children: [
-                  if (_currentIndex > 0)
-                    Expanded(
-                      child: AppButton(
-                        text: 'Back',
-                        type: ButtonType.outlined,
-                        onPressed: () {
-                          _pageController.previousPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                      ),
+              child: _currentIndex == _onboardingData.length - 1
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        AppButton(
+                          text: 'Sign In / Create Account',
+                          icon: Icons.cloud_outlined,
+                          onPressed: () => _completeOnboarding(openCloudLogin: true),
+                        ),
+                        AppSpacing.h12,
+                        AppButton(
+                          text: 'Continue Offline (No Account)',
+                          type: ButtonType.outlined,
+                          icon: Icons.phone_android_outlined,
+                          onPressed: () => _completeOnboarding(openCloudLogin: false),
+                        ),
+                      ],
                     )
-                  else
-                    const Spacer(),
-                  AppSpacing.w16,
-                  Expanded(
-                    child: AppButton(
-                      text: _currentIndex == _onboardingData.length - 1
-                          ? 'Get Started'
-                          : 'Next',
-                      onPressed: () {
-                        if (_currentIndex == _onboardingData.length - 1) {
-                          _completeOnboarding();
-                        } else {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        }
-                      },
+                  : Row(
+                      children: [
+                        if (_currentIndex > 0)
+                          Expanded(
+                            child: AppButton(
+                              text: 'Back',
+                              type: ButtonType.outlined,
+                              onPressed: () {
+                                _pageController.previousPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              },
+                            ),
+                          )
+                        else
+                          const Spacer(),
+                        AppSpacing.w16,
+                        Expanded(
+                          child: AppButton(
+                            text: 'Next',
+                            onPressed: () {
+                              _pageController.nextPage(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
             AppSpacing.h24,
           ],

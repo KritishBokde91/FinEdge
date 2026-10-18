@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../../core/constants/app_constants.dart';
 
 /// Complete backup DTO wrapper containing metadata, database records, and settings preferences.
 ///
@@ -49,7 +50,7 @@ class BackupMetadata {
   const BackupMetadata({
     this.exportId = '',
     this.appVersion = '1.0.0',
-    this.databaseVersion = 2,
+    this.databaseVersion = AppConstants.databaseVersion,
     this.device = 'Android / iOS',
     this.androidVersion = 0,
   });
@@ -65,7 +66,8 @@ class BackupMetadata {
   factory BackupMetadata.fromJson(Map<String, dynamic> json) => BackupMetadata(
         exportId: json['export_id'] as String? ?? '',
         appVersion: json['app_version'] as String? ?? '1.0.0',
-        databaseVersion: json['database_version'] as int? ?? 2,
+        databaseVersion:
+            json['database_version'] as int? ?? AppConstants.databaseVersion,
         device: json['device'] as String? ?? 'Android / iOS',
         androidVersion: json['android_version'] as int? ?? 0,
       );
@@ -81,6 +83,10 @@ class DatabaseSnapshot {
   final List<Map<String, dynamic>> notifications;
   final List<Map<String, dynamic>> fraudAlerts;
   final List<Map<String, dynamic>> aiInsights;
+  final List<Map<String, dynamic>> rules;
+  final List<Map<String, dynamic>> categories;
+  final List<Map<String, dynamic>> cards;
+  final List<Map<String, dynamic>> merchantMappings;
 
   const DatabaseSnapshot({
     this.smsMetadata = const [],
@@ -91,6 +97,10 @@ class DatabaseSnapshot {
     this.notifications = const [],
     this.fraudAlerts = const [],
     this.aiInsights = const [],
+    this.rules = const [],
+    this.categories = const [],
+    this.cards = const [],
+    this.merchantMappings = const [],
   });
 
   Map<String, dynamic> toJson() => {
@@ -102,6 +112,10 @@ class DatabaseSnapshot {
         'notifications': notifications,
         'fraud_alerts': fraudAlerts,
         'ai_insights': aiInsights,
+        'rules': rules,
+        'categories': categories,
+        'cards': cards,
+        'merchant_mappings': merchantMappings,
       };
 
   factory DatabaseSnapshot.fromJson(Map<String, dynamic> json) =>
@@ -114,6 +128,10 @@ class DatabaseSnapshot {
         notifications: _parseList(json['notifications']),
         fraudAlerts: _parseList(json['fraud_alerts']),
         aiInsights: _parseList(json['ai_insights']),
+        rules: _parseList(json['rules']),
+        categories: _parseList(json['categories']),
+        cards: _parseList(json['cards']),
+        merchantMappings: _parseList(json['merchant_mappings']),
       );
 
   static List<Map<String, dynamic>> _parseList(dynamic source) {

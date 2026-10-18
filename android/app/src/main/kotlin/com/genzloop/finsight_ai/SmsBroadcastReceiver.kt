@@ -24,7 +24,7 @@ import java.util.UUID
 /**
  * BroadcastReceiver that intercepts incoming SMS messages in real-time,
  * parses them for financial transactions using the Kotlin BankParserFactory,
- * saves them directly to the Drift SQLite database, and posts a notification.
+ * saves them directly to the Drift SQLite database with WAL safety, and posts a notification.
  */
 class SmsBroadcastReceiver : BroadcastReceiver() {
 
@@ -73,13 +73,23 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
                 Log.d(TAG, "Successfully parsed transaction: ${parsed.amount} ${parsed.currency} from ${parsed.bankName}")
                 val smsId = UUID.randomUUID().toString()
                 
-                // Write directly to the Drift SQLite database file
+                // Write directly to the Drift SQLite database file with WAL mode safety
                 saveToDatabase(context, smsId, sender, body, timestamp, parsed)
                 
                 // Post transaction notification
                 showNotification(context, parsed)
             }
         }
+    }
+
+    private fun findDatabaseFile(context: Context): File? {
+        val candidates = listOf(
+            File(context.filesDir.parentFile, "app_flutter/finsight.db"),
+            File(context.filesDir, "finsight.db"),
+            context.getDatabasePath("finsight.db"),
+            File(context.dataDir, "app_flutter/finsight.db")
+        )
+        return candidates.firstOrNull { it.exists() }
     }
 
     private fun saveToDatabase(
@@ -90,16 +100,25 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
         dateMs: Long,
         parsed: ParsedTransaction
     ) {
-        val dbFile = File(context.filesDir.parentFile, "app_flutter/finsight.db")
-        if (!dbFile.exists()) {
-            Log.e(TAG, "Database file does not exist at: ${dbFile.absolutePath}")
+        val dbFile = findDatabaseFile(context)
+        if (dbFile == null) {
+            Log.d(TAG, "Database file not found yet; Flutter will sync inbox on next launch.")
             return
         }
 
         var db: SQLiteDatabase? = null
         try {
-            db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READWRITE)
-            db.beginTransaction()
+            db = SQLiteDatabase.openDatabase(
+                dbFile.absolutePath,
+                null,
+                SQLiteDatabase.OPEN_READWRITE or SQLiteDatabase.ENABLE_WRITE_AHEAD_LOGGING
+            )
+            // Ensure WAL mode is active to prevent blocking active Drift reader/writer connections
+            if (!db.isWriteAheadLoggingEnabled) {
+                db.enableWriteAheadLogging()
+            }
+
+            db.beginTransactionNonExclusive()
 
             // 1. Insert into sms_metadata_table
             val smsValues = ContentValues().apply {
@@ -141,10 +160,20 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
             db.setTransactionSuccessful()
             Log.d(TAG, "Successfully auto-synced transaction to SQLite database: $txId")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to auto-sync transaction to SQLite database", e)
+            Log.w(TAG, "Could not write transaction to SQLite directly (app will sync upon launch): ${e.message}")
         } finally {
-            db?.endTransaction()
-            db?.close()
+            try {
+                if (db?.inTransaction() == true) {
+                    db.endTransaction()
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Error ending transaction", e)
+            }
+            try {
+                db?.close()
+            } catch (e: Exception) {
+                Log.w(TAG, "Error closing database", e)
+            }
         }
     }
 
