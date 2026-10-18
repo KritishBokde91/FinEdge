@@ -12,6 +12,7 @@ import '../../domain/entities/transaction_entity.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../main.dart';
 import '../../../../core/di/contacts_providers.dart';
+import '../../../../core/di/backup_providers.dart';
 
 class TransactionsPage extends ConsumerStatefulWidget {
   const TransactionsPage({super.key});
@@ -71,11 +72,46 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Transaction History',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Transaction History',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Export CSV',
+                        icon: const Icon(Icons.file_download_outlined),
+                        onPressed: () async {
+                          try {
+                            final allTx = await txRepository.watchAllTransactions().first;
+                            if (allTx.isEmpty) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('No transactions to export.')),
+                                );
+                              }
+                              return;
+                            }
+                            final csvService = await ref.read(csvExporterServiceProvider.future);
+                            final path = await csvService.exportTransactionEntities(allTx);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Exported CSV: ${path.split('/').last}')),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Export failed: $e')),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ],
                   ),
                   AppSpacing.h16,
                   AppSearchField(

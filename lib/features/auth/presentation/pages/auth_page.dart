@@ -7,9 +7,15 @@ import '../../../../shared/widgets/inputs/app_otp_field.dart';
 import '../../../../shared/widgets/buttons/app_button.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/di/repository_providers.dart';
 
 class AuthPage extends ConsumerStatefulWidget {
-  const AuthPage({super.key});
+  final bool isChangingPin;
+
+  const AuthPage({
+    super.key,
+    this.isChangingPin = false,
+  });
 
   @override
   ConsumerState<AuthPage> createState() => _AuthPageState();
@@ -22,6 +28,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   bool _isConfirmStep = false;
   String? _firstEntry;
   String? _storedPin;
+  bool _oldPinVerified = false;
 
   static const String _pinKey = 'user_pin';
 
@@ -34,17 +41,59 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   Future<void> _loadStoredPin() async {
     final prefs = ref.read(sharedPreferencesProvider);
     final pin = prefs.getString(_pinKey);
+    final bool isBioEnabled = ref.read(preferencesServiceProvider).isBiometricEnabled();
+
     setState(() {
       _storedPin = pin;
-      _isSetMode = pin == null;
+      if (widget.isChangingPin) {
+        _isSetMode = false;
+        _oldPinVerified = false;
+      } else {
+        _isSetMode = pin == null;
+      }
     });
+
+    // Auto-trigger biometric authentication if enabled and not in set/change mode
+    if (pin != null && pin.isNotEmpty && isBioEnabled && !widget.isChangingPin) {
+      // Small post-frame delay to ensure UI is ready
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _authenticateBiometrically();
+      });
+    }
+  }
+
+  Future<void> _authenticateBiometrically() async {
+    final permService = ref.read(permissionServiceProvider);
+    final success = await permService.authenticateWithBiometrics(
+      reason: 'Authenticate to access your FinSight vaults',
+    );
+    if (success && mounted) {
+      context.goNamed(RouteNames.home);
+    }
   }
 
   void _handlePinEntry(String code) async {
-    if (_isSetMode) {
+    if (widget.isChangingPin && !_oldPinVerified) {
+      _verifyOldPin(code);
+    } else if (_isSetMode) {
       _handleSetPin(code);
     } else {
       _verifyPasscode(code);
+    }
+  }
+
+  void _verifyOldPin(String code) {
+    if (code == _storedPin) {
+      setState(() {
+        _oldPinVerified = true;
+        _isSetMode = true;
+        _isConfirmStep = false;
+        _errorMsg = null;
+      });
+    } else {
+      setState(() {
+        _errorMsg = 'Incorrect old PIN. Please try again.';
+      });
     }
   }
 
@@ -83,7 +132,11 @@ class _AuthPageState extends ConsumerState<AuthPage> {
       setState(() {
         _isLoading = false;
       });
-      context.goNamed(RouteNames.home);
+      if (widget.isChangingPin) {
+        context.pop(); // Go back to settings screen
+      } else {
+        context.goNamed(RouteNames.home);
+      }
     }
   }
 
@@ -112,6 +165,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   }
 
   String get _titleText {
+    if (widget.isChangingPin && !_oldPinVerified) {
+      return 'Enter Old PIN';
+    }
     if (_isSetMode) {
       return _isConfirmStep ? 'Confirm Your PIN' : 'Create Security PIN';
     }
@@ -119,6 +175,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   }
 
   String get _subtitleText {
+    if (widget.isChangingPin && !_oldPinVerified) {
+      return 'Enter your current 4-digit PIN to verify';
+    }
     if (_isSetMode) {
       return _isConfirmStep
           ? 'Re-enter your 4-digit PIN to confirm'
@@ -130,6 +189,8 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bool isBioEnabled = ref.watch(preferencesServiceProvider).isBiometricEnabled();
+    final bool showBiometricManualTrigger = isBioEnabled && !_isSetMode && !(widget.isChangingPin && !_oldPinVerified);
 
     return Scaffold(
       body: SafeArea(
@@ -175,6 +236,22 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                 onCompleted: _handlePinEntry,
               ),
 
+              if (showBiometricManualTrigger) ...[
+                AppSpacing.h24,
+                IconButton(
+                  icon: const Icon(Icons.fingerprint_rounded, size: 48),
+                  color: theme.colorScheme.primary,
+                  onPressed: _authenticateBiometrically,
+                ),
+                Text(
+                  'Use Biometrics',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+
               if (_errorMsg != null) ...[
                 AppSpacing.h16,
                 Text(
@@ -191,13 +268,16 @@ class _AuthPageState extends ConsumerState<AuthPage> {
               ],
 
               const Spacer(),
-              AppButton(
-                text: 'Continue Offline',
-                type: ButtonType.ghost,
-                onPressed: () {
-                  context.goNamed(RouteNames.home);
-                },
-              ),
+              
+              // Only allow bypass/skip during initial registration (not when a PIN is set or changing)
+              if (_isSetMode && !widget.isChangingPin && _storedPin == null)
+                AppButton(
+                  text: 'Continue Offline',
+                  type: ButtonType.ghost,
+                  onPressed: () {
+                    context.goNamed(RouteNames.home);
+                  },
+                ),
               AppSpacing.h24,
             ],
           ),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/repository_providers.dart';
 import '../../../../core/services/permission_service.dart';
 import '../../../../core/services/preferences_service.dart';
+import '../../../../core/supabase/supabase_sync_service.dart';
 import '../../../../main.dart';
 import '../../../transactions/domain/repositories/transaction_repository.dart';
 import '../entities/sms_entity.dart';
@@ -24,6 +26,7 @@ class SmsSyncService {
   final PreferencesService prefs;
   final AppDatabase db;
   final SmsTransactionProcessor smsTransactionProcessor;
+  final SupabaseSyncService supabaseSyncService;
 
   static const _channel = MethodChannel('com.genzloop.finsight_ai/sms');
 
@@ -34,6 +37,7 @@ class SmsSyncService {
     required this.prefs,
     required this.db,
     required this.smsTransactionProcessor,
+    required this.supabaseSyncService,
   });
 
   /// Syncs SMS inbox, returns count of new transactions imported.
@@ -151,6 +155,18 @@ class SmsSyncService {
 
           if (result.success) {
             importedCount++;
+            // Cloud sync — fire & forget, non-blocking
+            if (result.transactionId != null) {
+              final txId = result.transactionId!;
+              unawaited(
+                txRepo.getTransactionById(txId).then((res) {
+                  res.fold(
+                    (_) {}, // local lookup failed, skip cloud sync
+                    (tx) => supabaseSyncService.syncNewTransaction(tx),
+                  );
+                }),
+              );
+            }
           }
         } catch (e, stack) {
           developer.log(
@@ -213,6 +229,7 @@ class SmsSyncService {
       sender: sender,
       timestamp: timestamp,
       bankName: parsed['bank'] ?? sender,
+      transactionHash: parsed['id'],
       isFromCard: parsed['isFromCard']?.toLowerCase() == 'true',
       currency: parsed['currency'] ?? 'INR',
       isMobileWallet: parsed['isMobileWallet']?.toLowerCase() == 'true',
@@ -234,5 +251,6 @@ final smsSyncServiceProvider = Provider<SmsSyncService>((ref) {
     prefs: ref.watch(preferencesServiceProvider),
     db: ref.watch(databaseProvider),
     smsTransactionProcessor: ref.watch(smsTransactionProcessorProvider),
+    supabaseSyncService: ref.watch(supabaseSyncServiceProvider),
   );
 });

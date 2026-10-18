@@ -41,4 +41,13 @@ abstract class RouteNames {
 
   static const String upgrade = 'upgrade';
   static const String upgradePath = '/upgrade';
+
+  static const String subscriptions = 'subscriptions';
+  static const String subscriptionsPath = '/subscriptions';
+
+  static const String rules = 'rules';
+  static const String rulesPath = '/rules';
+
+  static const String cloudLogin = 'cloudLogin';
+  static const String cloudLoginPath = '/cloud-login';
 }

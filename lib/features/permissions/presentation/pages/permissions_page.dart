@@ -65,6 +65,22 @@ class _PermissionsPageState extends ConsumerState<PermissionsPage> {
 
   Future<void> _toggleBiometrics(bool enabled) async {
     if (enabled) {
+      final rawPrefs = ref.read(sharedPreferencesProvider);
+      final pin = rawPrefs.getString('user_pin');
+      if (pin == null || pin.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Please set a security PIN first to enable Biometric Lock.',
+              ),
+            ),
+          );
+          context.goNamed(RouteNames.auth);
+        }
+        return;
+      }
+
       final permissionService = ref.read(permissionServiceProvider);
       final success = await permissionService.authenticateWithBiometrics(
         reason: 'Authenticate to enable biometric passcode locks',
@@ -189,8 +205,12 @@ class _PermissionsPageState extends ConsumerState<PermissionsPage> {
               const Spacer(),
               AppButton(
                 text: 'Continue',
-                onPressed: () {
-                  context.goNamed(RouteNames.home);
+                onPressed: () async {
+                  final prefs = ref.read(preferencesServiceProvider);
+                  await prefs.setPermissionsCompleted(true);
+                  if (context.mounted) {
+                    context.goNamed(RouteNames.home);
+                  }
                 },
               ),
               AppSpacing.h24,

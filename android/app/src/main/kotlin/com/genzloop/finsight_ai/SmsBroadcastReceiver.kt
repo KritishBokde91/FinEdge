@@ -1,5 +1,6 @@
 package com.genzloop.finsight_ai
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -7,11 +8,13 @@ import android.content.BroadcastReceiver
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import android.provider.Telephony
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.pennywiseai.parser.core.ParsedTransaction
 import com.pennywiseai.parser.core.TransactionType
 import com.pennywiseai.parser.core.bank.BankParserFactory
@@ -21,7 +24,7 @@ import java.util.UUID
 /**
  * BroadcastReceiver that intercepts incoming SMS messages in real-time,
  * parses them for financial transactions using the Kotlin BankParserFactory,
- * saves them directly to the Drift SQLite database, and posts a notification.
+ * saves them directly to the Drift SQLite database with WAL safety, and posts a notification.
  */
 class SmsBroadcastReceiver : BroadcastReceiver() {
 
@@ -70,13 +73,23 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
                 Log.d(TAG, "Successfully parsed transaction: ${parsed.amount} ${parsed.currency} from ${parsed.bankName}")
                 val smsId = UUID.randomUUID().toString()
                 
-                // Write directly to the Drift SQLite database file
+                // Write directly to the Drift SQLite database file with WAL mode safety
                 saveToDatabase(context, smsId, sender, body, timestamp, parsed)
                 
                 // Post transaction notification
                 showNotification(context, parsed)
             }
         }
+    }
+
+    private fun findDatabaseFile(context: Context): File? {
+        val candidates = listOf(
+            File(context.filesDir.parentFile, "app_flutter/finsight.db"),
+            File(context.filesDir, "finsight.db"),
+            context.getDatabasePath("finsight.db"),
+            File(context.dataDir, "app_flutter/finsight.db")
+        )
+        return candidates.firstOrNull { it.exists() }
     }
 
     private fun saveToDatabase(
@@ -87,16 +100,25 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
         dateMs: Long,
         parsed: ParsedTransaction
     ) {
-        val dbFile = File(context.filesDir.parentFile, "app_flutter/finsight.db")
-        if (!dbFile.exists()) {
-            Log.e(TAG, "Database file does not exist at: ${dbFile.absolutePath}")
+        val dbFile = findDatabaseFile(context)
+        if (dbFile == null) {
+            Log.d(TAG, "Database file not found yet; Flutter will sync inbox on next launch.")
             return
         }
 
         var db: SQLiteDatabase? = null
         try {
-            db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READWRITE)
-            db.beginTransaction()
+            db = SQLiteDatabase.openDatabase(
+                dbFile.absolutePath,
+                null,
+                SQLiteDatabase.OPEN_READWRITE or SQLiteDatabase.ENABLE_WRITE_AHEAD_LOGGING
+            )
+            // Ensure WAL mode is active to prevent blocking active Drift reader/writer connections
+            if (!db.isWriteAheadLoggingEnabled) {
+                db.enableWriteAheadLogging()
+            }
+
+            db.beginTransactionNonExclusive()
 
             // 1. Insert into sms_metadata_table
             val smsValues = ContentValues().apply {
@@ -110,7 +132,8 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
             db.insertWithOnConflict("sms_metadata_table", null, smsValues, SQLiteDatabase.CONFLICT_REPLACE)
 
             // 2. Determine transaction properties
-            val txId = UUID.nameUUIDFromBytes("$sender|${parsed.amount}|$dateMs".toByteArray()).toString()
+            val txId = parsed.transactionHash?.takeIf { it.isNotBlank() }
+                ?: parsed.generateTransactionId()
             val isIncome = if (parsed.type == TransactionType.INCOME) 1 else 0
             val merchant = parsed.merchant?.takeIf { it.isNotBlank() }
                 ?: parsed.bankName.takeIf { it.isNotBlank() }
@@ -129,21 +152,40 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
                 put("timestamp", dateMs / 1000L) // Drift stores unix timestamp in seconds
                 put("is_income", isIncome)
                 put("account_source", accountSource)
+                put("currency", parsed.currency)
+                put("reference", parsed.reference)
             }
             db.insertWithOnConflict("transactions_table", null, txValues, SQLiteDatabase.CONFLICT_REPLACE)
 
             db.setTransactionSuccessful()
             Log.d(TAG, "Successfully auto-synced transaction to SQLite database: $txId")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to auto-sync transaction to SQLite database", e)
+            Log.w(TAG, "Could not write transaction to SQLite directly (app will sync upon launch): ${e.message}")
         } finally {
-            db?.endTransaction()
-            db?.close()
+            try {
+                if (db?.inTransaction() == true) {
+                    db.endTransaction()
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Error ending transaction", e)
+            }
+            try {
+                db?.close()
+            } catch (e: Exception) {
+                Log.w(TAG, "Error closing database", e)
+            }
         }
     }
 
     private fun showNotification(context: Context, parsed: ParsedTransaction) {
         try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    Log.d(TAG, "Notification permission not granted, skipping notification")
+                    return
+                }
+            }
+
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

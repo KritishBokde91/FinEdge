@@ -47,6 +47,17 @@ class PreferencesService {
     return _prefs.setBool(_keyInitialSetupCompleted, completed);
   }
 
+  // --- Permissions Screen ---
+  static const String _keyPermissionsCompleted = 'permissions_completed';
+
+  bool isPermissionsCompleted() {
+    return _prefs.getBool(_keyPermissionsCompleted) ?? false;
+  }
+
+  Future<bool> setPermissionsCompleted(bool completed) {
+    return _prefs.setBool(_keyPermissionsCompleted, completed);
+  }
+
   // --- Last SMS Sync Timestamp ---
   static const String _keyLastSmsSync = 'last_sms_sync_timestamp';
 

@@ -20,6 +20,9 @@ import '../../features/ai_assistant/presentation/pages/ai_assistant_page.dart';
 import '../../features/budget_planner/presentation/pages/budget_planner_page.dart';
 import '../../features/financial_goals/presentation/pages/goals_page.dart';
 import '../../features/billing/presentation/pages/upgrade_page.dart';
+import '../../features/subscriptions/presentation/pages/subscriptions_page.dart';
+import '../../features/rules/presentation/pages/rules_page.dart';
+import '../../features/auth/presentation/pages/cloud_login_page.dart';
 
 class _ErrorView extends StatelessWidget {
   final Exception? error;
@@ -75,7 +78,15 @@ abstract class AppRouter {
       GoRoute(
         path: RouteNames.authPath,
         name: RouteNames.auth,
-        builder: (context, state) => const AuthPage(),
+        builder: (context, state) {
+          final isChangingPin = state.uri.queryParameters['change'] == 'true';
+          return AuthPage(isChangingPin: isChangingPin);
+        },
+      ),
+      GoRoute(
+        path: RouteNames.cloudLoginPath,
+        name: RouteNames.cloudLogin,
+        builder: (context, state) => const CloudLoginPage(),
       ),
 
       // --- Full-screen sub-routes (pushed over the bottom-nav shell) ---
@@ -93,6 +104,16 @@ abstract class AppRouter {
         path: RouteNames.upgradePath,
         name: RouteNames.upgrade,
         builder: (context, state) => const UpgradePage(),
+      ),
+      GoRoute(
+        path: RouteNames.subscriptionsPath,
+        name: RouteNames.subscriptions,
+        builder: (context, state) => const SubscriptionsPage(),
+      ),
+      GoRoute(
+        path: RouteNames.rulesPath,
+        name: RouteNames.rules,
+        builder: (context, state) => const RulesPage(),
       ),
 
       // --- Stateful Bottom Navigation Tab Shell ---

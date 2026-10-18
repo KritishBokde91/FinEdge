@@ -8,7 +8,9 @@ import '../../features/billing/domain/entities/pro_product.dart';
 /// Provider for the simulated billing repository instance.
 final purchaseGatewayProvider = Provider<PurchaseGateway>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return SimulatedBillingRepository(prefs);
+  final repo = SimulatedBillingRepository(prefs);
+  ref.onDispose(() => repo.dispose());
+  return repo;
 });
 
 /// Provider for the single entitlement feature gate.

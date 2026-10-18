@@ -19,6 +19,8 @@ import '../repositories/bank_notification_repository.dart';
 import '../repositories/budget_group_repository.dart';
 import '../repositories/llm_repository.dart';
 import '../repositories/model_repository.dart';
+import '../../features/rules/data/repositories/supabase_rules_repository.dart';
+import '../supabase/supabase_client_provider.dart';
 
 /// Provider for local receipt file storage manager.
 final receiptManagerServiceProvider = Provider<ReceiptManagerService>((ref) {
@@ -111,4 +113,10 @@ final modelRepositoryProvider = Provider<ModelRepository>((ref) {
 final aiContextRepositoryProvider = Provider<AiContextRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return AiContextRepository(db);
+});
+
+/// Provider for community rules & merchant mapping library.
+final communityRepositoryProvider = Provider<SupabaseCommunityRepository>((ref) {
+  final client = ref.watch(supabaseClientProvider);
+  return SupabaseCommunityRepository(client);
 });

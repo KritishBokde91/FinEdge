@@ -36,6 +36,32 @@ class TransactionRule {
     return name.trim().isNotEmpty && conditions.isNotEmpty && actions.isNotEmpty;
   }
 
+  TransactionRule copyWith({
+    String? id,
+    String? name,
+    String? description,
+    int? priority,
+    List<RuleCondition>? conditions,
+    List<RuleAction>? actions,
+    bool? isActive,
+    bool? isSystemTemplate,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return TransactionRule(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      priority: priority ?? this.priority,
+      conditions: conditions ?? this.conditions,
+      actions: actions ?? this.actions,
+      isActive: isActive ?? this.isActive,
+      isSystemTemplate: isSystemTemplate ?? this.isSystemTemplate,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   factory TransactionRule.fromJson(Map<String, dynamic> json) {
     return TransactionRule(
       id: json['id'] as String?,

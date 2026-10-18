@@ -15,7 +15,7 @@ abstract class AppConstants {
 
   /// Database configuration.
   static const databaseName = 'finsight_database';
-  static const databaseVersion = 2;
+  static const databaseVersion = 6;
   static const databaseTxHashDefault = '';
 
   /// Background Work / Sync Scheduling.
@@ -40,6 +40,6 @@ abstract class AppConstants {
 
   /// External community & support links.
   static const linkDiscord = 'https://discord.gg/H3xWeMWjKQ';
-  static const linkGithub = 'https://github.com/sarim2000/pennywiseai-tracker';
-  static const linkWebParser = 'https://pennywise.zynth.dev';
+  static const linkGithub = 'https://github.com/KritishBokde91/finsight_ai';
+  static const linkWebParser = 'https://finsight.app';
 }
